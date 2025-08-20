@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -378,11 +379,17 @@
         enableButtons();
 
         const q = query(collection(db, 'expedientes'));
-        onSnapshot(q, (querySnapshot) => {
-          allMovements = [];
-          querySnapshot.forEach(doc => allMovements.push(doc.data()));
-          filterAndRenderResults();
-        });
+	console.log('prueba', q)
+        onSnapshot(q, 
+  (querySnapshot) => {
+    const movimientos = [];
+    querySnapshot.forEach(doc => movimientos.push(doc.data()));
+    console.log('Movimientos:', movimientos);
+  },
+  (error) => {
+    console.error('Error al obtener datos de Firestore:', error);
+  }
+);
 
       } else {
         userId = null;
@@ -393,7 +400,7 @@
     });
 
     document.getElementById('saveBtn').addEventListener('click', async () => {
-      if (!userId) return showMessage('Debes iniciar sesión.', 'error');
+      //if (!userId) return showMessage('Debes iniciar sesión.', 'error');
       const codigo = document.getElementById('codigo').value.trim();
       const numero = document.getElementById('numero').value.trim();
       const letra = document.getElementById('letra').value.trim().toUpperCase();
