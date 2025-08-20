@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login con Google</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f3f4f6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #loginBtn {
+      background-color: #3b82f6;
+      color: white;
+    }
+    #loginBtn:hover {
+      background-color: #2563eb;
+    }
+    #logoutBtn {
+      background-color: #e5e7eb;
+      color: #1f2937;
+    }
+    #logoutBtn:hover {
+      background-color: #d1d5db;
+    }
+    #user-info {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #1f2937;
+    }
+  </style>
+</head>
+<body>
+  <h1>Login con Google</h1>
+  <button id="loginBtn">Iniciar sesión con Google</button>
+  <button id="logoutBtn">Cerrar sesión</button>
+  <p id="user-info">No has iniciado sesión.</p>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } 
+      from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+    // Configuración de tu proyecto Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
+      authDomain: "exptcoord.firebaseapp.com",
+      projectId: "exptcoord",
+      storageBucket: "exptcoord.firebasestorage.app",
+      messagingSenderId: "416639039117",
+      appId: "1:416639039117:web:d9422f6d853a760a3014c4",
+      measurementId: "G-94PRRLFZV4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const userInfo = document.getElementById("user-info");
+
+    // Login con Google
+    loginBtn.addEventListener("click", () => {
+      const provider = new GoogleAuthProvider();
+      signInWithPopup(auth, provider)
+        .then(result => {
+          const user = result.user;
+          console.log("Usuario conectado:", user);
+        })
+        .catch(error => {
+          console.error("Error en el login:", error);
+          alert("Error al iniciar sesión: " + error.message);
+        });
+    });
+
+    // Logout
+    logoutBtn.addEventListener("click", () => {
+      signOut(auth).then(() => {
+        console.log("Sesión cerrada");
+      });
+    });
+
+    // Detectar cambios de autenticación
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        userInfo.textContent = `Conectado como: ${user.displayName} (${user.email})`;
+      } else {
+        userInfo.textContent = "No has iniciado sesión.";
+      }
+    });
+  </script>
+</body>
+</html>
