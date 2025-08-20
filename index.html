@@ -379,7 +379,9 @@
         enableButtons();
 
         const q = query(collection(db, 'expedientes'));
+	console.log('prueba', q)
         onSnapshot(q, (querySnapshot) => {
+	console.log('snapshot', querySnapshot)
           allMovements = [];
           querySnapshot.forEach(doc => allMovements.push(doc.data()));
           filterAndRenderResults();
