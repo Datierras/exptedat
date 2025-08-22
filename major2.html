@@ -302,7 +302,8 @@
             getAuth,
             signInWithEmailAndPassword,
             signOut,
-            onAuthStateChanged
+            onAuthStateChanged,
+            updateProfile // Importamos la nueva función
         } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
         import {
             initializeFirestore,
@@ -312,7 +313,6 @@
             onSnapshot
         } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-        // NOTA: Esta configuración es de tu código original.
         const firebaseConfig = {
             apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
             authDomain: "exptcoord.firebaseapp.com",
@@ -353,7 +353,6 @@
             }, 3500);
         }
 
-        // Función para mostrar mensajes de error de login
         function showLoginMessage(text, type = 'error') {
             loginMessage.textContent = text;
             loginMessage.className = `message-box message-${type}`;
@@ -369,7 +368,7 @@
             document.getElementById('letra').value = '';
             document.getElementById('anio').value = '';
             document.getElementById('cuerpo').value = '';
-            document.getElementById('extracto').value = ''; // Se limpia el nuevo campo de extracto
+            document.getElementById('extracto').value = '';
             document.getElementById('oficina').value = '';
             document.querySelectorAll('input[name="tipoMovimiento"]').forEach(r => r.checked = false);
         }
@@ -403,7 +402,6 @@
                     resultsHtml += `<tr>
                         <td class="no-wrap">
                             ${mov.id}
-                            <!-- Muestra el extracto debajo del código del expediente si existe -->
                             ${mov.extracto ? `<br><span class="text-xs text-gray-500 italic">${mov.extracto}</span>` : ''}
                         </td>
                         <td>${mov.cuerpo || '-'}</td>
@@ -460,12 +458,10 @@
             }
 
             try {
-                // Intenta iniciar sesión con el email y la contraseña proporcionados
                 const userCredential = await signInWithEmailAndPassword(auth, username, password);
                 console.log("Inicio de sesión exitoso:", userCredential.user);
             } catch (error) {
                 console.error("Error al iniciar sesión:", error);
-                // Maneja los errores de autenticación y muestra un mensaje amigable
                 let errorMessage = "Ocurrió un error. Inténtalo de nuevo.";
                 switch (error.code) {
                     case "auth/invalid-email":
@@ -486,11 +482,29 @@
 
         logoutBtn.addEventListener("click", () => signOut(auth));
 
-        onAuthStateChanged(auth, user => {
+        onAuthStateChanged(auth, async user => {
             if (user) {
                 userId = user.uid;
-                // Usamos el email como nombre de usuario para la visualización
-                userName = user.email;
+                
+                // --- CAMBIO IMPORTANTE AQUÍ ---
+                // Verifica si el usuario tiene un nombre de perfil.
+                if (user.displayName) {
+                    userName = user.displayName;
+                } else {
+                    // Si no tiene, usa la parte del correo antes del @
+                    const tempName = user.email.split('@')[0];
+                    userName = tempName;
+                    
+                    // Opcional: actualiza el perfil del usuario en Firebase para guardar el nombre por defecto
+                    // para futuras sesiones. Si el usuario ya tiene un nombre, no se actualizará.
+                    try {
+                        await updateProfile(user, { displayName: tempName });
+                        console.log("Nombre de usuario actualizado con éxito en Firebase.");
+                    } catch (error) {
+                        console.error("Error al actualizar el perfil del usuario:", error);
+                    }
+                }
+
                 userInfo.textContent = `Conectado como: ${userName}`;
 
                 loginContainer.style.display = 'none';
@@ -499,14 +513,12 @@
                 document.getElementById('app-content').style.display = 'flex';
                 enableButtons();
 
-                // Escucha en tiempo real para todos los movimientos
                 const q = query(collection(db, 'expedientes'));
                 onSnapshot(q,
                     (querySnapshot) => {
                         const movimientos = [];
                         querySnapshot.forEach(doc => movimientos.push(doc.data()));
                         allMovements = movimientos;
-                        // No pintamos aquí, se actualiza al buscar
                     },
                     (error) => {
                         console.error('Error al obtener datos de Firestore:', error);
@@ -535,7 +547,7 @@
             const letra = document.getElementById('letra').value.trim().toUpperCase();
             const anio = document.getElementById('anio').value.trim();
             const cuerpo = document.getElementById('cuerpo').value.trim();
-            const extracto = document.getElementById('extracto').value.trim(); // Se obtiene el valor del nuevo campo
+            const extracto = document.getElementById('extracto').value.trim();
             const oficina = document.getElementById('oficina').value.trim();
             const tipoMovimiento = document.querySelector('input[name="tipoMovimiento"]:checked')?.value;
 
@@ -547,12 +559,12 @@
             const movimiento = {
                 id: expId,
                 cuerpo: cuerpo || null,
-                extracto: extracto || null, // Se guarda el nuevo campo en el documento
+                extracto: extracto || null,
                 fecha: new Date().toLocaleString(),
                 oficina,
                 tipo: tipoMovimiento,
                 userId,
-                userName
+                userName // Ahora esto guardará el nombre de usuario, no el email
             };
 
             try {
