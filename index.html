@@ -1,161 +1,407 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Gestión de Expedientes</title>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // 🔥 Configuración de Firebase
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Control de Expedientes con Login</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; }
+    .container { max-width: 900px; padding: 2rem; }
+    .input-group label { font-weight: 500; }
+    .input-group input[type="text"], .input-group input[type="number"] {
+      padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.5rem; width: 100%; transition: all 0.2s;
+    }
+    .input-group input[type="text"]:focus, .input-group input[type="number"]:focus {
+      outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.5);
+    }
+    .radio-label { display:flex; align-items:center; gap:0.5rem; cursor:pointer; user-select:none; }
+    .radio-label input[type="radio"] { accent-color:#3b82f6; }
+    .btn { padding:0.75rem 1.5rem; border-radius:0.5rem; font-weight:600; transition:background-color 0.2s; }
+    .btn-disabled { opacity:0.6; cursor:not-allowed; }
+    .btn-primary { background-color:#3b82f6; color:white; }
+    .btn-primary:hover:not(.btn-disabled){ background-color:#2563eb; }
+    .btn-secondary{ background-color:#e5e7eb; color:#1f2937; }
+    .btn-secondary:hover:not(.btn-disabled){ background-color:#d1d5db; }
+    .message-box { padding:1rem; border-radius:0.5rem; margin-top:1rem; font-weight:500; display:none; }
+    .message-success { background-color:#dcfce7; color:#166534; }
+    .message-error { background-color:#fee2e2; color:#991b1b; }
+    .results-table th, .results-table td { padding:0.75rem; text-align:left; }
+    .results-table th { font-weight:600; border-bottom:2px solid #e5e7eb; }
+    .results-table tr:nth-child(even){ background-color:#f9fafb; }
+    #userInfoDisplay { margin-top:1rem; font-size:0.875rem; color:#6b7280; text-align:center; }
+
+    /* 🔒 NUEVO: evita que el expediente se corte en varias líneas */
+    .no-wrap { white-space: nowrap; }
+
+    /* 🔒 NUEVO: permite scroll horizontal si el expediente no entra */
+    #searchResults { overflow-x: auto; }
+  </style>
+</head>
+
+<body class="bg-gray-100 flex flex-col items-center min-h-screen p-4">
+
+  <!-- Contenedor Login -->
+  <div id="login-container" class="container bg-white rounded-xl shadow-lg flex flex-col items-center p-8">
+    <h1 class="text-2xl font-bold mb-6 text-gray-800">Login con Google</h1>
+    <button id="loginBtn" class="btn btn-primary w-full mb-4">Iniciar sesión con Google</button>
+    <button id="logoutBtn" class="btn btn-secondary w-full mb-2">Cerrar sesión</button>
+    <p id="user-info">No has iniciado sesión.</p>
+  </div>
+
+  <!-- Contenedor principal de la aplicación (oculto inicialmente) -->
+  <div id="app-container" class="container bg-white rounded-xl shadow-lg flex flex-col md:flex-row gap-8 mt-6" style="display:none;">
+    <div id="status-container" class="flex-1 text-center">
+      <h2 class="text-2xl font-bold mb-6 text-gray-800">Control de Expedientes</h2>
+      <div id="loading" class="text-center text-gray-500 mb-4">Conectando...</div>
+      <div id="login-required" style="display:none;">
+        <p class="text-lg text-gray-700 mb-4">Inicia sesión para continuar.</p>
+        <button id="google-signin-btn" class="btn btn-primary w-full shadow-md hover:shadow-lg transition-shadow">Iniciar sesión con Google</button>
+      </div>
+      <div id="message" class="message-box"></div>
+    </div>
+
+    <div id="app-content" class="flex flex-col md:flex-row gap-8 w-full" style="display:none;">
+      <!-- Cargar Movimiento -->
+      <div class="flex-1">
+        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Cargar Movimiento</h2>
+        <div class="flex flex-col gap-6">
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-gray-700">Datos del Expediente</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="input-group">
+                <label for="codigo">Código *</label>
+                <input type="number" id="codigo" class="w-full mt-1" required title="Máximo 4 dígitos numéricos">
+              </div>
+              <div class="input-group">
+                <label for="numero">Número *</label>
+                <input type="number" id="numero" class="w-full mt-1" required title="Máximo 6 dígitos numéricos">
+              </div>
+              <div class="input-group">
+                <label for="letra">Letra *</label>
+                <input type="text" id="letra" class="w-full mt-1" maxlength="1" required title="Una sola letra">
+              </div>
+              <div class="input-group">
+                <label for="anio">Año *</label>
+                <input type="number" id="anio" class="w-full mt-1" min="1000" max="9999" required title="4 dígitos numéricos">
+              </div>
+              <div class="input-group col-span-2">
+                <label for="cuerpo">Cuerpo</label>
+                <input type="number" id="cuerpo" class="w-full mt-1" title="Campo opcional">
+              </div>
+            </div>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-gray-700">Detalles del Movimiento</h3>
+            <div class="input-group mb-4">
+              <label for="oficina">Oficina que Envía / Recibe *</label>
+              <input type="text" id="oficina" class="w-full mt-1" placeholder="Ej: Administración" required>
+            </div>
+            <div class="flex gap-6 mb-6">
+              <label class="radio-label">
+                <input type="radio" name="tipoMovimiento" value="envio" id="envio" required>
+                Envío
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="tipoMovimiento" value="recepcion" id="recepcion">
+                Recepción
+              </label>
+            </div>
+            <button id="saveBtn" class="btn btn-primary w-full shadow-md hover:shadow-lg transition-shadow btn-disabled" disabled>
+              Guardar Movimiento
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden md:block w-px bg-gray-200"></div>
+
+      <!-- Buscar Expediente -->
+      <div class="flex-1">
+        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Buscar Expediente</h2>
+        <div class="flex flex-col gap-6">
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-gray-700">Criterios de Búsqueda</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="input-group">
+                <label for="searchCodigo">Código</label>
+                <input type="number" id="searchCodigo" class="w-full mt-1">
+              </div>
+              <div class="input-group">
+                <label for="searchNumero">Número</label>
+                <input type="number" id="searchNumero" class="w-full mt-1">
+              </div>
+              <div class="input-group">
+                <label for="searchLetra">Letra</label>
+                <input type="text" id="searchLetra" class="w-full mt-1">
+              </div>
+              <div class="input-group">
+                <label for="searchAnio">Año</label>
+                <input type="number" id="searchAnio" class="w-full mt-1">
+              </div>
+              <div class="input-group col-span-2">
+                <label for="searchCuerpo">Cuerpo</label>
+                <input type="number" id="searchCuerpo" class="w-full mt-1">
+              </div>
+            </div>
+          </div>
+
+          <!-- 🔒 NUEVO: botones en fila -->
+          <div class="flex gap-3">
+            <button id="searchBtn" class="btn btn-secondary w-full shadow-md hover:shadow-lg transition-shadow btn-disabled" disabled>
+              Buscar
+            </button>
+            <button id="clearBtn" class="btn btn-secondary w-full shadow-md hover:shadow-lg transition-shadow btn-disabled" disabled>
+              Limpiar resultados
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-8">
+          <h3 class="text-lg font-semibold mb-3 text-gray-700">Resultados</h3>
+          <!-- 🔒 NUEVO: overflow-x-auto también por CSS arriba -->
+          <div id="searchResults" class="overflow-y-auto max-h-96">
+            <p class="text-gray-500 text-center p-4" id="placeholderMessage">
+              Utiliza los campos de búsqueda y presiona 'Buscar' para ver los movimientos.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="userInfoDisplay" class="text-center mt-4"></div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    import {
+      initializeFirestore,
+      collection,
+      addDoc,
+      query,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
     const firebaseConfig = {
-      apiKey: "TU_API_KEY",
-      authDomain: "TU_PROJECT.firebaseapp.com",
-      projectId: "TU_PROJECT",
-      storageBucket: "TU_PROJECT.appspot.com",
-      messagingSenderId: "XXXXXX",
-      appId: "1:XXXX:web:XXXX"
+      apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
+      authDomain: "exptcoord.firebaseapp.com",
+      projectId: "exptcoord",
+      storageBucket: "exptcoord.firebasestorage.app",
+      messagingSenderId: "416639039117",
+      appId: "1:416639039117:web:d9422f6d853a760a3014c4",
+      measurementId: "G-94PRRLFZV4"
     };
 
     const app = initializeApp(firebaseConfig);
+
+    // Evita bloqueos de conexión en algunos entornos
+    const db = initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true
+    });
+
     const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-    const db = getFirestore(app);
 
-    let allMovements = []; // 📦 Expedientes en memoria
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const userInfo = document.getElementById("user-info");
+    const appContainer = document.getElementById("app-container");
+    const loginContainer = document.getElementById("login-container");
 
-    // 🔐 Login con Google
-    window.loginConGoogle = async () => {
-      try {
-        await signInWithPopup(auth, provider);
-        document.getElementById("login-section").style.display = "none";
-        document.getElementById("loading").style.display = "block";
-      } catch (error) {
-        console.error("Error en login:", error);
-      }
-    };
+    let userId = null;
+    let userName = null;
+    let allMovements = [];
 
-    // 📡 Escucha de Firestore en tiempo real
-    const q = query(collection(db, 'expedientes'));
-    onSnapshot(q,
-      (querySnapshot) => {
-        const movimientos = [];
-        querySnapshot.forEach(doc => movimientos.push(doc.data()));
-        allMovements = movimientos;
-
-        document.getElementById("loading").style.display = "none";
-        document.getElementById("app-content").style.display = "flex";
-      },
-      (error) => {
-        console.error("Error al obtener datos:", error);
-      }
-    );
-
-    // 📤 Guardar expediente
-    window.guardarExpediente = async () => {
-      const codigo = document.getElementById("codigo").value.trim();
-      const numero = document.getElementById("numero").value.trim();
-      const letra = document.getElementById("letra").value.trim();
-      const anio = document.getElementById("anio").value.trim();
-      const cuerpo = document.getElementById("cuerpo").value.trim();
-
-      if (!codigo || !numero || !letra || !anio) {
-        alert("Completa todos los campos obligatorios");
-        return;
-      }
-
-      try {
-        await addDoc(collection(db, "expedientes"), {
-          codigo, numero, letra, anio, cuerpo
-        });
-        alert("Expediente guardado ✅");
-        document.getElementById("form-expediente").reset();
-      } catch (e) {
-        console.error("Error al guardar:", e);
-      }
-    };
-
-    // 🔎 Buscar expediente
-    window.buscarExpediente = () => {
-      const termino = document.getElementById("buscar").value.trim().toLowerCase();
-      const resultados = allMovements.filter(exp =>
-        exp.codigo.toLowerCase().includes(termino) ||
-        exp.numero.toLowerCase().includes(termino) ||
-        exp.letra.toLowerCase().includes(termino) ||
-        exp.anio.toLowerCase().includes(termino) ||
-        (exp.cuerpo && exp.cuerpo.toLowerCase().includes(termino))
-      );
-      renderResults(resultados);
-    };
-
-    // 🧹 Limpiar resultados
-    window.limpiarResultados = () => {
-      document.getElementById("buscar").value = "";
-      document.getElementById("resultados").innerHTML = "";
-    };
-
-    // 📜 Renderizar resultados
-    function renderResults(lista) {
-      const container = document.getElementById("resultados");
-      container.innerHTML = "";
-
-      if (lista.length === 0) {
-        container.innerHTML = "<p>No se encontraron expedientes.</p>";
-        return;
-      }
-
-      lista.forEach(exp => {
-        const div = document.createElement("div");
-        div.classList.add("resultado");
-
-        div.innerHTML = `
-          <p><strong>Expediente:</strong> ${exp.codigo}-${exp.numero}-${exp.letra}-${exp.anio}</p>
-          ${exp.cuerpo ? `<p><strong>Cuerpo:</strong> ${exp.cuerpo}</p>` : ""}
-        `;
-
-        container.appendChild(div);
-      });
+    function showMessage(text, type) {
+      const messageBox = document.getElementById('message');
+      messageBox.textContent = text;
+      messageBox.className = 'message-box ' + (type === 'success' ? 'message-success' : 'message-error');
+      messageBox.style.display = 'block';
+      setTimeout(() => { messageBox.style.display = 'none'; }, 3500);
     }
+
+    function clearInputs() {
+      document.getElementById('codigo').value = '';
+      document.getElementById('numero').value = '';
+      document.getElementById('letra').value = '';
+      document.getElementById('anio').value = '';
+      document.getElementById('cuerpo').value = '';
+      document.getElementById('oficina').value = '';
+      document.querySelectorAll('input[name="tipoMovimiento"]').forEach(r => r.checked = false);
+    }
+
+    // 🔒 NUEVO: limpiar solo lo mostrado en resultados (no inputs, no DB)
+    function clearSearchResults() {
+      const searchResultsContainer = document.getElementById('searchResults');
+      searchResultsContainer.innerHTML = `
+        <p class="text-gray-500 text-center p-4" id="placeholderMessage">
+          Utiliza los campos de búsqueda y presiona 'Buscar' para ver los movimientos.
+        </p>`;
+    }
+
+    function renderResults(results) {
+      const searchResultsContainer = document.getElementById('searchResults');
+      const placeholderMessage = document.getElementById('placeholderMessage');
+      if (results.length > 0) {
+        if (placeholderMessage) placeholderMessage.style.display = 'none';
+        let resultsHtml = `<table class="min-w-full divide-y divide-gray-200 results-table rounded-lg overflow-hidden">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-500">Expediente</th>
+              <th class="py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-500">Cuerpo</th>
+              <th class="py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-500">Tipo</th>
+              <th class="py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-500">Oficina</th>
+              <th class="py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-500">Usuario</th>
+              <th class="py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-500">Fecha</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">`;
+        results.forEach(mov => {
+          resultsHtml += `<tr>
+            <!-- 🔒 NUEVO: clase no-wrap para que no se corte -->
+            <td class="no-wrap">${mov.id}</td>
+            <td>${mov.cuerpo || '-'}</td>
+            <td>${mov.tipo === 'envio' ? 'Envío' : 'Recepción'}</td>
+            <td>${mov.oficina}</td>
+            <td>${mov.userName}</td>
+            <td>${mov.fecha}</td>
+          </tr>`;
+        });
+        resultsHtml += `</tbody></table>`;
+        searchResultsContainer.innerHTML = resultsHtml;
+      } else {
+        searchResultsContainer.innerHTML = `<p class="text-gray-500 text-center p-4" id="placeholderMessage">No se encontraron movimientos.</p>`;
+      }
+    }
+
+    function filterAndRenderResults() {
+      const searchCodigo = document.getElementById('searchCodigo').value.trim();
+      const searchNumero = document.getElementById('searchNumero').value.trim();
+      const searchLetra = document.getElementById('searchLetra').value.trim().toUpperCase();
+      const searchAnio = document.getElementById('searchAnio').value.trim();
+      const searchCuerpo = document.getElementById('searchCuerpo').value.trim();
+      const searchExpId = [searchCodigo, searchNumero, searchLetra, searchAnio].filter(Boolean).join('-');
+      let filteredResults = allMovements;
+      if (searchExpId || searchCuerpo) {
+        filteredResults = allMovements.filter(mov => {
+          const idMatch = new RegExp(searchExpId.replace(/-/g, '.*'), 'i').test(mov.id);
+          const cuerpoMatch = !searchCuerpo || (mov.cuerpo && mov.cuerpo.toString() === searchCuerpo);
+          return idMatch && cuerpoMatch;
+        });
+      }
+      renderResults(filteredResults);
+    }
+
+    function enableButtons() {
+      document.getElementById('saveBtn').disabled = false;
+      document.getElementById('saveBtn').classList.remove('btn-disabled');
+      document.getElementById('searchBtn').disabled = false;
+      document.getElementById('searchBtn').classList.remove('btn-disabled');
+      // 🔒 NUEVO: habilitamos limpiar resultados
+      document.getElementById('clearBtn').disabled = false;
+      document.getElementById('clearBtn').classList.remove('btn-disabled');
+    }
+
+    // --- Auth UI ---
+    loginBtn.addEventListener("click", () => {
+      const provider = new GoogleAuthProvider();
+      signInWithPopup(auth, provider).catch(error => {
+        console.error(error);
+        alert("Error al iniciar sesión: " + error.message);
+      });
+    });
+
+    logoutBtn.addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        userId = user.uid;
+        userName = user.displayName || 'Usuario anónimo';
+        userInfo.textContent = `Conectado como: ${user.displayName || 'Usuario anónimo'}`;
+
+        // Mostramos la app de inmediato
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'flex';
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app-content').style.display = 'flex';
+        enableButtons();
+
+        // Escucha en tiempo real
+        const q = query(collection(db, 'expedientes'));
+        onSnapshot(q,
+          (querySnapshot) => {
+            const movimientos = [];
+            querySnapshot.forEach(doc => movimientos.push(doc.data()));
+            allMovements = movimientos;
+            // No pintamos acá para no sobreescribir la búsqueda; se actualiza al buscar.
+          },
+          (error) => {
+            console.error('Error al obtener datos de Firestore:', error);
+            let msg = 'Error al conectar con la base de datos.';
+            if (error && error.code === 'permission-denied') {
+              msg = 'Permiso denegado al leer "expedientes". Revisá las reglas de Firestore o que el usuario esté autenticado.';
+            }
+            showMessage(msg, 'error');
+          }
+        );
+
+      } else {
+        userId = null;
+        userName = null;
+        loginContainer.style.display = 'flex';
+        appContainer.style.display = 'none';
+        document.getElementById('app-content').style.display = 'none';
+        document.getElementById('loading').style.display = 'block';
+      }
+    });
+
+    // --- Guardar movimiento ---
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      const codigo = document.getElementById('codigo').value.trim();
+      const numero = document.getElementById('numero').value.trim();
+      const letra = document.getElementById('letra').value.trim().toUpperCase();
+      const anio = document.getElementById('anio').value.trim();
+      const cuerpo = document.getElementById('cuerpo').value.trim();
+      const oficina = document.getElementById('oficina').value.trim();
+      const tipoMovimiento = document.querySelector('input[name="tipoMovimiento"]:checked')?.value;
+
+      if (!codigo || !numero || !letra || !anio || !oficina || !tipoMovimiento) {
+        return showMessage('Completa todos los campos obligatorios.', 'error');
+      }
+
+      const expId = [codigo, numero, letra, anio].join('-');
+      const movimiento = {
+        id: expId,
+        cuerpo: cuerpo || null,
+        fecha: new Date().toLocaleString(),
+        oficina,
+        tipo: tipoMovimiento,
+        userId,
+        userName
+      };
+
+      try {
+        await addDoc(collection(db, 'expedientes'), movimiento);
+        showMessage('Movimiento guardado con éxito.', 'success');
+        clearInputs();
+        // El onSnapshot actualizará allMovements en memoria.
+      } catch (e) {
+        console.error(e);
+        let msg = 'Error al guardar.';
+        if (e && e.code === 'permission-denied') {
+          msg = 'Permiso denegado al escribir en "expedientes". Revisá reglas de Firestore.';
+        }
+        showMessage(msg + ' ' + (e.message || ''), 'error');
+      }
+    });
+
+    // --- Búsqueda & Limpiar ---
+    document.getElementById('searchBtn').addEventListener('click', filterAndRenderResults);
+    document.getElementById('clearBtn').addEventListener('click', clearSearchResults);
   </script>
-
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #app-content { display: none; gap: 30px; }
-    .col { flex: 1; }
-    .resultado { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 5px; }
-  </style>
-</head>
-<body>
-  <!-- Login -->
-  <div id="login-section">
-    <button onclick="loginConGoogle()">Iniciar sesión con Google</button>
-  </div>
-
-  <!-- Cargando -->
-  <div id="loading" style="display:none;">Conectando...</div>
-
-  <!-- App -->
-  <div id="app-content">
-    <div class="col">
-      <h2>Cargar Expediente</h2>
-      <form id="form-expediente" onsubmit="event.preventDefault(); guardarExpediente();">
-        <input id="codigo" placeholder="Código" required><br>
-        <input id="numero" placeholder="Número" required><br>
-        <input id="letra" placeholder="Letra" required><br>
-        <input id="anio" placeholder="Año" required><br>
-        <input id="cuerpo" placeholder="Cuerpo"><br>
-        <button type="submit">Guardar</button>
-      </form>
-    </div>
-
-    <div class="col">
-      <h2>Buscar Expediente</h2>
-      <input id="buscar" placeholder="Buscar...">
-      <button onclick="buscarExpediente()">Buscar</button>
-      <button onclick="limpiarResultados()">Limpiar resultados</button>
-      <div id="resultados"></div>
-    </div>
-  </div>
 </body>
 </html>
