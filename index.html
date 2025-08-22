@@ -23,20 +23,18 @@
     const provider = new GoogleAuthProvider();
     const db = getFirestore(app);
 
-    let allMovements = []; // 📦 Acá guardamos todos los expedientes
+    let allMovements = []; // 📦 Expedientes en memoria
 
     // 🔐 Login con Google
-    document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("loginBtn").addEventListener("click", async () => {
-        try {
-          await signInWithPopup(auth, provider);
-          document.getElementById("login-section").style.display = "none";
-          document.getElementById("loading").style.display = "block";
-        } catch (error) {
-          console.error("Error en login:", error);
-        }
-      });
-    });
+    window.loginConGoogle = async () => {
+      try {
+        await signInWithPopup(auth, provider);
+        document.getElementById("login-section").style.display = "none";
+        document.getElementById("loading").style.display = "block";
+      } catch (error) {
+        console.error("Error en login:", error);
+      }
+    };
 
     // 📡 Escucha de Firestore en tiempo real
     const q = query(collection(db, 'expedientes'));
@@ -131,7 +129,7 @@
 <body>
   <!-- Login -->
   <div id="login-section">
-    <button id="loginBtn">Iniciar sesión con Google</button>
+    <button onclick="loginConGoogle()">Iniciar sesión con Google</button>
   </div>
 
   <!-- Cargando -->
