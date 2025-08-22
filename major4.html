@@ -669,6 +669,9 @@
 
                 return idMatch && cuerpoMatch && nomatch && nomatch2 && nomatch3 && nomatch4 && nomatch5 && nomatch6 && nomatch7 && nomatch8 && nomatch9 && nomatch10 && nomatch11 && nomatch12 && partidaProvincialMatch && partidaMunicipalMatch;
             });
+            // Ordenar por fecha en orden descendente (más reciente primero)
+            filteredResults.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
             renderResults(filteredResults);
         }
 
@@ -870,5 +873,3 @@
         });
     </script>
 </body>
-
-</html>
