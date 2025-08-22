@@ -136,22 +136,21 @@
   </div>
 
   <!-- Contenedor principal de la aplicación (oculto inicialmente) -->
-  <div id="app-container" class="container bg-white rounded-xl shadow-lg flex flex-col md:flex-row gap-8 mt-6" style="display:none;">
+  <div id="app-container" class="container bg-white rounded-xl shadow-lg flex flex-col md:flex-row gap-8 mt-6"
+    style="display:none;">
     <div id="status-container" class="flex-1 text-center">
       <h2 class="text-2xl font-bold mb-6 text-gray-800">Control de Expedientes</h2>
       <div id="loading" class="text-center text-gray-500 mb-4">Conectando...</div>
       <div id="login-required" style="display: none;">
         <p class="text-lg text-gray-700 mb-4">Inicia sesión para continuar.</p>
-        <button id="google-signin-btn" class="btn btn-primary w-full shadow-md hover:shadow-lg transition-shadow">
-          Iniciar sesión con Google
-        </button>
+        <button id="google-signin-btn"
+          class="btn btn-primary w-full shadow-md hover:shadow-lg transition-shadow">Iniciar sesión con Google</button>
       </div>
       <div id="message" class="message-box"></div>
     </div>
 
     <div id="app-content" class="flex flex-col md:flex-row gap-8 w-full" style="display: none;">
-      <!-- Aquí va todo tu HTML de control de expedientes (código que ya me diste) -->
-      <!-- Copié solo la parte de Carga de Movimientos y Búsqueda de Expedientes -->
+      <!-- Cargar Movimiento -->
       <div class="flex-1">
         <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Cargar Movimiento</h2>
         <div class="flex flex-col gap-6">
@@ -172,7 +171,8 @@
               </div>
               <div class="input-group">
                 <label for="anio">Año *</label>
-                <input type="number" id="anio" class="w-full mt-1" min="1000" max="9999" required title="4 dígitos numéricos">
+                <input type="number" id="anio" class="w-full mt-1" min="1000" max="9999" required
+                  title="4 dígitos numéricos">
               </div>
               <div class="input-group col-span-2">
                 <label for="cuerpo">Cuerpo</label>
@@ -196,7 +196,8 @@
                 Recepción
               </label>
             </div>
-            <button id="saveBtn" class="btn btn-primary w-full shadow-md hover:shadow-lg transition-shadow btn-disabled" disabled>
+            <button id="saveBtn"
+              class="btn btn-primary w-full shadow-md hover:shadow-lg transition-shadow btn-disabled" disabled>
               Guardar Movimiento
             </button>
           </div>
@@ -205,6 +206,7 @@
 
       <div class="hidden md:block w-px bg-gray-200"></div>
 
+      <!-- Buscar Expediente -->
       <div class="flex-1">
         <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Buscar Expediente</h2>
         <div class="flex flex-col gap-6">
@@ -233,7 +235,8 @@
               </div>
             </div>
           </div>
-          <button id="searchBtn" class="btn btn-secondary w-full shadow-md hover:shadow-lg transition-shadow btn-disabled" disabled>
+          <button id="searchBtn"
+            class="btn btn-secondary w-full shadow-md hover:shadow-lg transition-shadow btn-disabled" disabled>
             Buscar
           </button>
         </div>
@@ -378,18 +381,24 @@
         appContainer.style.display = 'flex';
         enableButtons();
 
+        // 🔹 Ahora sí cargamos movimientos y mostramos el sistema
         const q = query(collection(db, 'expedientes'));
-	console.log('prueba', q)
-        onSnapshot(q, 
-  (querySnapshot) => {
-    const movimientos = [];
-    querySnapshot.forEach(doc => movimientos.push(doc.data()));
-    console.log('Movimientos:', movimientos);
-  },
-  (error) => {
-    console.error('Error al obtener datos de Firestore:', error);
-  }
-);
+        onSnapshot(q,
+          (querySnapshot) => {
+            const movimientos = [];
+            querySnapshot.forEach(doc => movimientos.push(doc.data()));
+
+            // Guardamos y mostramos
+            allMovements = movimientos;
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('app-content').style.display = 'flex';
+            renderResults(allMovements);
+          },
+          (error) => {
+            console.error('Error al obtener datos de Firestore:', error);
+            showMessage('Error al conectar con la base de datos', 'error');
+          }
+        );
 
       } else {
         userId = null;
@@ -400,35 +409,7 @@
     });
 
     document.getElementById('saveBtn').addEventListener('click', async () => {
-      //if (!userId) return showMessage('Debes iniciar sesión.', 'error');
       const codigo = document.getElementById('codigo').value.trim();
       const numero = document.getElementById('numero').value.trim();
       const letra = document.getElementById('letra').value.trim().toUpperCase();
-      const anio = document.getElementById('anio').value.trim();
-      const cuerpo = document.getElementById('cuerpo').value.trim();
-      const oficina = document.getElementById('oficina').value.trim();
-      const tipoMovimiento = document.querySelector('input[name="tipoMovimiento"]:checked')?.value;
-
-      if (!codigo || !numero || !letra || !anio || !oficina || !tipoMovimiento) {
-        return showMessage('Completa todos los campos obligatorios.', 'error');
-      }
-
-      const expId = [codigo, numero, letra, anio].join('-');
-      const movimiento = { id: expId, cuerpo: cuerpo || null, fecha: new Date().toLocaleString(), oficina, tipo: tipoMovimiento, userId, userName };
-
-      try {
-        await addDoc(collection(db, 'expedientes'), movimiento);
-        showMessage('Movimiento guardado con éxito.', 'success');
-        filterAndRenderResults();
-        clearInputs();
-      } catch (e) {
-        showMessage('Error al guardar: ' + e.message, 'error');
-      }
-    });
-
-    document.getElementById('searchBtn').addEventListener('click', filterAndRenderResults);
-
-  </script>
-</body>
-
-</html>
+      const anio =
