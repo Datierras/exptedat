@@ -2,126 +2,37 @@
 <html lang="es">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Control de Expedientes con Login</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f3f4f6;
-      color: #1f2937;
+    body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; }
+    .container { max-width: 900px; padding: 2rem; }
+    .input-group label { font-weight: 500; }
+    .input-group input[type="text"], .input-group input[type="number"] {
+      padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.5rem; width: 100%; transition: all 0.2s;
     }
-
-    .container {
-      max-width: 900px;
-      padding: 2rem;
+    .input-group input[type="text"]:focus, .input-group input[type="number"]:focus {
+      outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.5);
     }
-
-    .input-group label {
-      font-weight: 500;
-    }
-
-    .input-group input[type="text"],
-    .input-group input[type="number"] {
-      padding: 0.5rem;
-      border: 1px solid #d1d5db;
-      border-radius: 0.5rem;
-      width: 100%;
-      transition: all 0.2s;
-    }
-
-    .input-group input[type="text"]:focus,
-    .input-group input[type="number"]:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
-    }
-
-    .radio-label {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .radio-label input[type="radio"] {
-      accent-color: #3b82f6;
-    }
-
-    .btn {
-      padding: 0.75rem 1.5rem;
-      border-radius: 0.5rem;
-      font-weight: 600;
-      transition: background-color 0.2s;
-    }
-
-    .btn-disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      background-color: #3b82f6;
-      color: white;
-    }
-
-    .btn-primary:hover:not(.btn-disabled) {
-      background-color: #2563eb;
-    }
-
-    .btn-secondary {
-      background-color: #e5e7eb;
-      color: #1f2937;
-    }
-
-    .btn-secondary:hover:not(.btn-disabled) {
-      background-color: #d1d5db;
-    }
-
-    .message-box {
-      padding: 1rem;
-      border-radius: 0.5rem;
-      margin-top: 1rem;
-      font-weight: 500;
-      display: none;
-    }
-
-    .message-success {
-      background-color: #dcfce7;
-      color: #166534;
-    }
-
-    .message-error {
-      background-color: #fee2e2;
-      color: #991b1b;
-    }
-
-    .results-table th,
-    .results-table td {
-      padding: 0.75rem;
-      text-align: left;
-    }
-
-    .results-table th {
-      font-weight: 600;
-      border-bottom: 2px solid #e5e7eb;
-    }
-
-    .results-table tr:nth-child(even) {
-      background-color: #f9fafb;
-    }
-
-    #userInfoDisplay {
-      margin-top: 1rem;
-      font-size: 0.875rem;
-      color: #6b7280;
-      text-align: center;
-    }
+    .radio-label { display:flex; align-items:center; gap:0.5rem; cursor:pointer; user-select:none; }
+    .radio-label input[type="radio"] { accent-color:#3b82f6; }
+    .btn { padding:0.75rem 1.5rem; border-radius:0.5rem; font-weight:600; transition:background-color 0.2s; }
+    .btn-disabled { opacity:0.6; cursor:not-allowed; }
+    .btn-primary { background-color:#3b82f6; color:white; }
+    .btn-primary:hover:not(.btn-disabled){ background-color:#2563eb; }
+    .btn-secondary{ background-color:#e5e7eb; color:#1f2937; }
+    .btn-secondary:hover:not(.btn-disabled){ background-color:#d1d5db; }
+    .message-box { padding:1rem; border-radius:0.5rem; margin-top:1rem; font-weight:500; display:none; }
+    .message-success { background-color:#dcfce7; color:#166534; }
+    .message-error { background-color:#fee2e2; color:#991b1b; }
+    .results-table th, .results-table td { padding:0.75rem; text-align:left; }
+    .results-table th { font-weight:600; border-bottom:2px solid #e5e7eb; }
+    .results-table tr:nth-child(even){ background-color:#f9fafb; }
+    #userInfoDisplay { margin-top:1rem; font-size:0.875rem; color:#6b7280; text-align:center; }
   </style>
 </head>
 
@@ -140,18 +51,15 @@
     <div id="status-container" class="flex-1 text-center">
       <h2 class="text-2xl font-bold mb-6 text-gray-800">Control de Expedientes</h2>
       <div id="loading" class="text-center text-gray-500 mb-4">Conectando...</div>
-      <div id="login-required" style="display: none;">
+      <div id="login-required" style="display:none;">
         <p class="text-lg text-gray-700 mb-4">Inicia sesión para continuar.</p>
-        <button id="google-signin-btn" class="btn btn-primary w-full shadow-md hover:shadow-lg transition-shadow">
-          Iniciar sesión con Google
-        </button>
+        <button id="google-signin-btn" class="btn btn-primary w-full shadow-md hover:shadow-lg transition-shadow">Iniciar sesión con Google</button>
       </div>
       <div id="message" class="message-box"></div>
     </div>
 
-    <div id="app-content" class="flex flex-col md:flex-row gap-8 w-full" style="display: none;">
-      <!-- Aquí va todo tu HTML de control de expedientes (código que ya me diste) -->
-      <!-- Copié solo la parte de Carga de Movimientos y Búsqueda de Expedientes -->
+    <div id="app-content" class="flex flex-col md:flex-row gap-8 w-full" style="display:none;">
+      <!-- Cargar Movimiento -->
       <div class="flex-1">
         <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Cargar Movimiento</h2>
         <div class="flex flex-col gap-6">
@@ -205,6 +113,7 @@
 
       <div class="hidden md:block w-px bg-gray-200"></div>
 
+      <!-- Buscar Expediente -->
       <div class="flex-1">
         <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Buscar Expediente</h2>
         <div class="flex flex-col gap-6">
@@ -255,7 +164,14 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, onSnapshot } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+    import {
+      // 👇 usamos initializeFirestore para habilitar auto long polling
+      initializeFirestore,
+      collection,
+      addDoc,
+      query,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
@@ -268,8 +184,14 @@
     };
 
     const app = initializeApp(firebaseConfig);
+
+    // 🔧 Mitiga “conectando” eterno en ciertos entornos (hosting/redes/proxies/adblock)
+    const db = initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true
+      // Si lo prefieres, puedes forzar: experimentalForceLongPolling: true
+    });
+
     const auth = getAuth(app);
-    const db = getFirestore(app);
 
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
@@ -286,7 +208,7 @@
       messageBox.textContent = text;
       messageBox.className = 'message-box ' + (type === 'success' ? 'message-success' : 'message-error');
       messageBox.style.display = 'block';
-      setTimeout(() => { messageBox.style.display = 'none'; }, 3000);
+      setTimeout(() => { messageBox.style.display = 'none'; }, 3500);
     }
 
     function clearInputs() {
@@ -359,44 +281,61 @@
       document.getElementById('searchBtn').classList.remove('btn-disabled');
     }
 
+    // --- Auth UI ---
     loginBtn.addEventListener("click", () => {
       const provider = new GoogleAuthProvider();
-      signInWithPopup(auth, provider)
-        .catch(error => alert("Error al iniciar sesión: " + error.message));
+      signInWithPopup(auth, provider).catch(error => {
+        console.error(error);
+        alert("Error al iniciar sesión: " + error.message);
+      });
     });
 
-    logoutBtn.addEventListener("click", () => {
-      signOut(auth);
-    });
+    logoutBtn.addEventListener("click", () => signOut(auth));
 
     onAuthStateChanged(auth, user => {
       if (user) {
         userId = user.uid;
         userName = user.displayName || 'Usuario anónimo';
         userInfo.textContent = `Conectado como: ${user.displayName || 'Usuario anónimo'}`;
+
+        // 👇 Mostramos la app de inmediato (no esperamos el snapshot)
         loginContainer.style.display = 'none';
         appContainer.style.display = 'flex';
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app-content').style.display = 'flex';
         enableButtons();
 
+        // Escucha en tiempo real (si falla, la UI ya está visible)
         const q = query(collection(db, 'expedientes'));
-	console.log('prueba', q)
-        onSnapshot(q, (querySnapshot) => {
-	console.log('snapshot', querySnapshot)
-          allMovements = [];
-          querySnapshot.forEach(doc => allMovements.push(doc.data()));
-          filterAndRenderResults();
-        });
+        onSnapshot(q,
+          (querySnapshot) => {
+            const movimientos = [];
+            querySnapshot.forEach(doc => movimientos.push(doc.data()));
+            allMovements = movimientos;
+            renderResults(allMovements);
+          },
+          (error) => {
+            console.error('Error al obtener datos de Firestore:', error);
+            let msg = 'Error al conectar con la base de datos.';
+            if (error && error.code === 'permission-denied') {
+              msg = 'Permiso denegado al leer "expedientes". Revisá las reglas de Firestore o que el usuario esté autenticado.';
+            }
+            showMessage(msg, 'error');
+          }
+        );
 
       } else {
         userId = null;
         userName = null;
         loginContainer.style.display = 'flex';
         appContainer.style.display = 'none';
+        document.getElementById('app-content').style.display = 'none';
+        document.getElementById('loading').style.display = 'block';
       }
     });
 
+    // --- Guardar movimiento ---
     document.getElementById('saveBtn').addEventListener('click', async () => {
-      if (!userId) return showMessage('Debes iniciar sesión.', 'error');
       const codigo = document.getElementById('codigo').value.trim();
       const numero = document.getElementById('numero').value.trim();
       const letra = document.getElementById('letra').value.trim().toUpperCase();
@@ -410,21 +349,33 @@
       }
 
       const expId = [codigo, numero, letra, anio].join('-');
-      const movimiento = { id: expId, cuerpo: cuerpo || null, fecha: new Date().toLocaleString(), oficina, tipo: tipoMovimiento, userId, userName };
+      const movimiento = {
+        id: expId,
+        cuerpo: cuerpo || null,
+        fecha: new Date().toLocaleString(),
+        oficina,
+        tipo: tipoMovimiento,
+        userId,
+        userName
+      };
 
       try {
         await addDoc(collection(db, 'expedientes'), movimiento);
         showMessage('Movimiento guardado con éxito.', 'success');
-        filterAndRenderResults();
         clearInputs();
+        // No llamamos a filterAndRenderResults() aquí; el onSnapshot actualizará la tabla.
       } catch (e) {
-        showMessage('Error al guardar: ' + e.message, 'error');
+        console.error(e);
+        let msg = 'Error al guardar.';
+        if (e && e.code === 'permission-denied') {
+          msg = 'Permiso denegado al escribir en "expedientes". Revisá reglas de Firestore.';
+        }
+        showMessage(msg + ' ' + (e.message || ''), 'error');
       }
     });
 
+    // --- Búsqueda ---
     document.getElementById('searchBtn').addEventListener('click', filterAndRenderResults);
-
   </script>
 </body>
-
 </html>
