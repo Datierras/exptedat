@@ -1,137 +1,203 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Control de Expedientes</title>
+
+    <!-- Tailwind + font -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; }
+        body { font-family: 'Inter', sans-serif; background:#f3f4f6; color:#1f2937; }
         .container { max-width: 900px; padding: 2rem; }
-        .input-group label { font-weight: 500; }
-        .input-group input, .input-group textarea { padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.5rem; width: 100%; transition: all 0.2s; }
-        .input-group input:focus, .input-group textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); }
-        .radio-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; user-select: none; }
-        .radio-label input[type="radio"] { accent-color: #3b82f6; }
-        .btn { padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; transition: background-color 0.2s; }
-        .btn-disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn-primary { background-color: #3b82f6; color: white; }
-        .btn-primary:hover:not(.btn-disabled) { background-color: #2563eb; }
-        .btn-secondary { background-color: #e5e7eb; color: #1f2937; }
-        .btn-secondary:hover:not(.btn-disabled) { background-color: #d1d5db; }
-        .message-box { padding: 1rem; border-radius: 0.5rem; margin-top: 1rem; font-weight: 500; display: none; }
-        .message-success { background-color: #dcfce7; color: #166534; }
-        .message-error { background-color: #fee2e2; color: #991b1b; }
-        .results-table th, .results-table td { padding: 0.75rem; text-align: left; }
-        .results-table th { font-weight: 600; border-bottom: 2px solid #e5e7eb; }
-        .results-table tr:nth-child(even) { background-color: #f9fafb; }
-        .footer { margin-top: 2rem; font-size: 0.75rem; color: #6b7280; text-align: center; }
-        /* Modales arrancan ocultos */
-        #barcodeModal, #scannerModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 50; }
-        #barcodeModalContent, #scannerModalContent { background-color: white; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; max-width: 90%; position: relative; }
-        @media print { body * { visibility: hidden; } #barcodeModalContent, #barcodeModalContent * { visibility: visible; } #barcodeModalContent { position: absolute; left: 0; top: 0; width: 100%; } }
+        .input-group label { font-weight: 500; display:block; margin-bottom:.25rem; }
+        .input-group input, .input-group textarea, .input-group select {
+            padding:.5rem; border:1px solid #d1d5db; border-radius:.5rem; width:100%; transition:all .15s;
+        }
+        .input-group input:focus, .input-group textarea:focus { outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+        .btn{ padding:.75rem 1.25rem; border-radius:.5rem; font-weight:600; }
+        .btn-primary{ background:#3b82f6; color:#fff }
+        .btn-secondary{ background:#e5e7eb; color:#1f2937 }
+        .btn-disabled{ opacity:.6; cursor:not-allowed; }
+        .message-box{ display:none; padding:1rem; border-radius:.5rem; margin-top:1rem; font-weight:500 }
+        .message-success{ background:#dcfce7; color:#166534 }
+        .message-error{ background:#fee2e2; color:#991b1b }
+        .results-table th, .results-table td{ padding:.75rem; text-align:left; border-bottom:1px solid #eee }
+        .footer{ margin-top:2rem; font-size:.75rem; color:#6b7280; text-align:center }
+
+        /* IMPORTANT: modales arrancan ocultos (display:none). NO forzar display:flex en CSS */
+        #barcodeModal, #scannerModal { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; justify-content:center; align-items:center; z-index:60; }
+        #barcodeModalContent, #scannerModalContent { background:#fff; padding:1.5rem; border-radius:.5rem; box-shadow:0 8px 30px rgba(0,0,0,.15); max-width:90%; width:420px; text-align:center; }
+        #reader { width:320px; height:320px; }
+        @media print {
+            body * { visibility:hidden; }
+            #printableArea, #printableArea * { visibility: visible; }
+            #printableArea { position:absolute; left:0; top:0; width:100%; }
+        }
     </style>
 </head>
-
-<body class="bg-gray-100 flex flex-col items-center min-h-screen p-4">
+<body class="flex items-center justify-start min-h-screen p-4">
 
     <!-- LOGIN -->
     <div id="login-section" class="flex flex-col items-center justify-center min-h-screen w-full p-4">
         <div class="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full">
             <h2 class="text-2xl font-bold text-center text-blue-800 mb-6">Iniciar Sesión</h2>
-            <form id="loginForm" class="flex flex-col gap-4">
+            <form id="loginForm" class="flex flex-col gap-4" autocomplete="on">
                 <div class="input-group">
                     <label for="email">Correo Electrónico</label>
-                    <input type="email" id="email" class="mt-1" required />
+                    <input id="email" name="email" type="email" placeholder="tu@email.com" required />
                 </div>
                 <div class="input-group">
                     <label for="password">Contraseña</label>
-                    <input type="password" id="password" class="mt-1" required />
+                    <input id="password" name="password" type="password" placeholder="********" required />
                 </div>
-                <button type="submit" class="btn btn-primary w-full">Ingresar</button>
+                <button class="btn btn-primary w-full" type="submit">Ingresar</button>
             </form>
         </div>
     </div>
 
     <!-- APP -->
     <div id="main-app-wrapper" class="container bg-white rounded-xl shadow-lg flex flex-col relative p-8 gap-8 mt-6 hidden">
+
         <h1 class="text-3xl font-bold text-center text-blue-800">Control de Expedientes</h1>
 
-        <!-- Formulario -->
-        <form id="expedienteForm" class="flex flex-col gap-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="input-group"><label for="codigo">Código</label><input type="number" id="codigo" required /></div>
-                <div class="input-group"><label for="numero">Número</label><input type="number" id="numero" required /></div>
-                <div class="input-group"><label for="letra">Letra</label><input type="text" id="letra" maxlength="1" required /></div>
-                <div class="input-group"><label for="anio">Año</label><input type="number" id="anio" required /></div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="input-group"><label for="ubicacion">Ubicación</label><input type="text" id="ubicacion" required /></div>
-                <div class="input-group"><label for="estado">Estado</label><input type="text" id="estado" required /></div>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-4">
-                <button type="submit" id="saveBtn" class="btn btn-primary w-full">Guardar</button>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-4">
-                <button type="button" id="generateBarcodeBtn" class="btn btn-primary w-full">Generar Código</button>
-            </div>
-            <div id="saveMessage" class="message-box message-success"></div>
-        </form>
+        <!-- CARGAR MOVIMIENTO -->
+        <section id="cargar-movimiento" class="bg-white">
+            <form id="expedienteForm" class="flex flex-col gap-6">
+                <h2 class="text-xl font-bold text-gray-700">Cargar Movimiento</h2>
 
-        <!-- Buscar -->
-        <h2 class="text-xl font-bold text-gray-700">Buscar expediente</h2>
-        <div class="flex flex-col sm:flex-row gap-4">
-            <button type="button" id="searchBtn" class="btn btn-primary w-full">Buscar</button>
-            <button type="button" id="clearBtn" class="btn btn-secondary w-full">Limpiar</button>
-            <button type="button" id="scanBarcodeBtn" class="btn btn-primary w-full">Escanear Código</button>
-        </div>
-        <div id="searchResults" class="rounded-lg shadow overflow-hidden">
-            <table class="w-full results-table bg-white">
-                <thead><tr><th>Expediente</th><th>Ubicación</th><th>Estado</th><th>Fecha</th><th>Usuario</th></tr></thead>
-                <tbody id="resultsBody"></tbody>
-            </table>
-        </div>
-        <div id="searchMessage" class="message-box message-error hidden"></div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="input-group"><label for="codigo">Código</label><input id="codigo" type="number" placeholder="Ej: 4078" required></div>
+                    <div class="input-group"><label for="numero">Número</label><input id="numero" type="number" placeholder="Ej: 255255" required></div>
+                    <div class="input-group"><label for="letra">Letra</label><input id="letra" type="text" maxlength="1" class="uppercase" placeholder="Ej: I" required></div>
+                    <div class="input-group"><label for="anio">Año</label><input id="anio" type="number" placeholder="Ej: 2025" required></div>
+                </div>
 
-        <footer class="footer"><p>&copy; 2025. Todos los derechos reservados.</p></footer>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="input-group"><label for="oficinaInput">Oficina</label><input id="oficinaInput" type="text" placeholder="Ej: Mesa de Entradas" required></div>
+
+                    <div class="input-group">
+                        <label>Movimiento</label>
+                        <div class="flex gap-4 items-center mt-2">
+                            <label class="flex items-center gap-2"><input type="radio" name="movimientoTipo" value="enviamos" required> Enviamos</label>
+                            <label class="flex items-center gap-2"><input type="radio" name="movimientoTipo" value="recibimos" required> Recibimos</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 hidden" id="nomenclaturaFields">
+                    <div class="input-group"><label for="circunscripcion">Circunscripción</label><input id="circunscripcion" type="number" placeholder="Ej: 4078"></div>
+                    <div class="input-group"><label for="seccion">Sección</label><input id="seccion" type="text" placeholder="Ej: B"></div>
+                    <div class="input-group"><label for="chacra">Chacra</label><input id="chacra" type="text" placeholder="Ej: B"></div>
+                    <div class="input-group"><label for="quinta">Quinta</label><input id="quinta" type="text" placeholder="Ej: B"></div>
+                    <div class="input-group"><label for="fraccion">Fracción</label><input id="fraccion" type="text" placeholder="Ej: B"></div>
+                    <div class="input-group"><label for="manzana">Manzana</label><input id="manzana" type="text" placeholder="Ej: B"></div>
+                    <div class="input-group"><label for="parcela">Parcela</label><input id="parcela" type="text" placeholder="Ej: B"></div>
+                    <div class="input-group"><label for="subparcela">Sub-Parcela</label><input id="subparcela" type="text" placeholder="Ej: B"></div>
+                    <div class="input-group"><label for="subsuelo">Subsuelo</label><input id="subsuelo" type="text" placeholder="Ej: 1"></div>
+                    <div class="input-group"><label for="partidaProvincial">Partida Provincial</label><input id="partidaProvincial" type="number" placeholder="Ej: 123456"></div>
+                    <div class="input-group"><label for="partidaMunicipal">Partida Municipal</label><input id="partidaMunicipal" type="number" placeholder="Ej: 654321"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="input-group"><label for="observaciones">Observaciones</label><textarea id="observaciones" placeholder="Observaciones..." rows="3"></textarea></div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button id="saveBtn" type="submit" class="btn btn-primary">Cargar Expediente</button>
+                    <button id="showNomenclaturaBtn" type="button" class="btn btn-secondary">Mostrar Nomenclatura</button>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button type="button" id="generateBarcodeBtn" class="btn btn-primary w-full">Generar Código</button>
+                </div>
+
+                <div id="saveMessage" class="message-box message-success"></div>
+            </form>
+        </section>
+
+        <hr class="border-gray-200">
+
+        <!-- BUSCAR EXPEDIENTE -->
+        <section id="buscar-expediente">
+            <h2 class="text-xl font-bold text-gray-700">Buscar expediente</h2>
+
+            <div id="advancedSearchFields" class="grid grid-cols-1 md:grid-cols-4 gap-4 hidden mt-3">
+                <div class="input-group"><label for="searchCodigo">Código</label><input id="searchCodigo" type="number" placeholder="Código"></div>
+                <div class="input-group"><label for="searchNumero">Número</label><input id="searchNumero" type="number" placeholder="Número"></div>
+                <div class="input-group"><label for="searchLetra">Letra</label><input id="searchLetra" type="text" class="uppercase" placeholder="Letra"></div>
+                <div class="input-group"><label for="searchAnio">Año</label><input id="searchAnio" type="number" placeholder="Año"></div>
+                <div class="input-group"><label for="searchOficina">Oficina</label><input id="searchOficina" type="text" placeholder="Oficina"></div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 mt-3">
+                <button id="searchBtn" class="btn btn-primary w-full">Buscar</button>
+                <button id="clearBtn" class="btn btn-secondary w-full">Limpiar Búsqueda</button>
+                <button id="showAdvancedSearchBtn" class="btn btn-secondary w-full">Búsqueda Avanzada</button>
+                <button id="scanBarcodeBtn" class="btn btn-primary w-full">Escanear Código</button>
+            </div>
+
+            <div id="searchResults" class="rounded-lg shadow overflow-hidden mt-4">
+                <table class="w-full results-table bg-white">
+                    <thead>
+                        <tr>
+                            <th>Expediente</th>
+                            <th>Oficina</th>
+                            <th>Movimiento</th>
+                            <th>Fecha</th>
+                            <th>Usuario</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody"></tbody>
+                </table>
+            </div>
+
+            <div id="searchMessage" class="message-box message-error hidden"></div>
+        </section>
+
+        <footer class="footer">
+            <p>&copy; 2025. Todos los derechos reservados.</p>
+        </footer>
     </div>
 
-    <!-- Modal código -->
-    <div id="barcodeModal" class="hidden">
-        <div id="barcodeModalContent" class="flex flex-col items-center gap-4">
-            <h3 class="text-lg font-bold">Código de Barras</h3>
-            <svg id="barcodeSvg" class="w-full h-auto"></svg>
-            <p id="barcodeDataText" class="text-sm text-gray-600"></p>
-            <div class="flex gap-4">
+    <!-- MODAL: Código de Barras -->
+    <div id="barcodeModal" aria-hidden="true">
+        <div id="barcodeModalContent" class="">
+            <h3 class="text-lg font-bold mb-2">Código de Barras</h3>
+            <svg id="barcodeSvg" class="w-full h-auto mb-2"></svg>
+            <p id="barcodeDataText" class="text-sm text-gray-600 mb-4"></p>
+            <div class="flex justify-center gap-4">
                 <button id="printBarcodeBtn" class="btn btn-primary">Imprimir</button>
                 <button id="closeBarcodeModalBtn" class="btn btn-secondary">Cerrar</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal escáner -->
-    <div id="scannerModal" class="hidden">
-        <div id="scannerModalContent" class="flex flex-col items-center gap-4">
-            <h3 class="text-lg font-bold">Escanear Código de Barras</h3>
-            <div id="reader" style="width: 300px; height: 300px;"></div>
-            <p id="scannerMessage" class="text-sm text-gray-600"></p>
-            <button id="closeScannerModalBtn" class="btn btn-secondary">Cerrar Escáner</button>
+    <!-- MODAL: Escáner -->
+    <div id="scannerModal" aria-hidden="true">
+        <div id="scannerModalContent">
+            <h3 class="text-lg font-bold mb-2">Escanear Código de Barras</h3>
+            <div id="reader" class="mx-auto mb-3"></div>
+            <p id="scannerMessage" class="text-sm text-gray-600 mb-3"></p>
+            <div class="flex justify-center">
+                <button id="closeScannerModalBtn" class="btn btn-secondary">Cerrar Escáner</button>
+            </div>
         </div>
     </div>
 
+    <!-- External libs loaded at the end for performance -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <!-- App script (module) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // 🔑 Tu configuración real de Firebase
+        // === Tu Firebase config real (proporcionada) ===
         const firebaseConfig = {
             apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
             authDomain: "exptcoord.firebaseapp.com",
@@ -146,40 +212,374 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const loginSection=document.getElementById('login-section'), mainAppWrapper=document.getElementById('main-app-wrapper'), loginForm=document.getElementById('loginForm');
-        const resultsBody=document.getElementById('resultsBody'), searchMessage=document.getElementById('searchMessage');
+        // ==== DOM refs ====
+        const loginSection = document.getElementById('login-section');
+        const mainAppWrapper = document.getElementById('main-app-wrapper');
+        const loginForm = document.getElementById('loginForm');
 
-        // Login
-        loginForm.addEventListener('submit',async(e)=>{ e.preventDefault(); try{ await signInWithEmailAndPassword(auth, loginForm.email.value, loginForm.password.value);}catch(err){alert(`Error al iniciar sesión: ${err.message}`);} });
-        onAuthStateChanged(auth,(user)=>{ if(user){ loginSection.classList.add('hidden'); mainAppWrapper.classList.remove('hidden'); } else { loginSection.classList.remove('hidden'); mainAppWrapper.classList.add('hidden'); } });
+        const expedienteForm = document.getElementById('expedienteForm');
+        const saveBtn = document.getElementById('saveBtn');
+        const saveMessage = document.getElementById('saveMessage');
+        const showNomenclaturaBtn = document.getElementById('showNomenclaturaBtn');
+        const nomenclaturaFields = document.getElementById('nomenclaturaFields');
 
-        // Buscar
-        async function filterAndRenderResults(barcodeScanned=null){
-            resultsBody.innerHTML=''; searchMessage.style.display='none';
-            let expedientesQuery=collection(db,'expedientes');
-            if(barcodeScanned){ expedientesQuery=query(expedientesQuery,where('barcode','==',barcodeScanned)); }
-            try{ const qs=await getDocs(expedientesQuery); if(qs.empty){ searchMessage.style.display='block'; searchMessage.textContent='No se encontraron expedientes.'; return;}
-                qs.forEach((doc)=>{const d=doc.data(); resultsBody.innerHTML+=`<tr><td>${d.codigo}-${d.numero}-${d.letra}-${d.anio}</td><td>${d.ubicacion||''}</td><td>${d.estado||''}</td><td>${d.fecha||''}</td><td>${d.userName||''}</td></tr>`;});
-            }catch(err){ console.error(err);}
+        const generateBarcodeBtn = document.getElementById('generateBarcodeBtn');
+        const barcodeModal = document.getElementById('barcodeModal');
+        const barcodeSvg = document.getElementById('barcodeSvg');
+        const barcodeDataText = document.getElementById('barcodeDataText');
+        const printBarcodeBtn = document.getElementById('printBarcodeBtn');
+        const closeBarcodeModalBtn = document.getElementById('closeBarcodeModalBtn');
+
+        const scanBarcodeBtn = document.getElementById('scanBarcodeBtn');
+        const scannerModal = document.getElementById('scannerModal');
+        const readerDiv = document.getElementById('reader');
+        const scannerMessage = document.getElementById('scannerMessage');
+        const closeScannerModalBtn = document.getElementById('closeScannerModalBtn');
+
+        const searchBtn = document.getElementById('searchBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const showAdvancedSearchBtn = document.getElementById('showAdvancedSearchBtn');
+        const advancedSearchFields = document.getElementById('advancedSearchFields');
+        const resultsBody = document.getElementById('resultsBody');
+        const searchMessage = document.getElementById('searchMessage');
+
+        let html5QrCode = null;
+        let currentUserId = null;
+        let currentUserName = '';
+
+        // ===== AUTH FLOW =====
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                // try get user doc (if exists)
+                try {
+                    const userDocRef = doc(db, 'users', currentUserId);
+                    const userDoc = await getDoc(userDocRef);
+                    currentUserName = userDoc.exists() ? (userDoc.data().name || user.email) : user.email;
+                    if (!userDoc.exists()) {
+                        await setDoc(userDocRef, { name: user.email }, { merge: true });
+                    }
+                } catch (err) {
+                    console.warn("No se pudo leer/crear doc usuario:", err);
+                    currentUserName = user.email;
+                }
+
+                loginSection.classList.add('hidden');
+                mainAppWrapper.classList.remove('hidden');
+
+                // asegurar que modales no estén visibles
+                barcodeModal.style.display = 'none';
+                scannerModal.style.display = 'none';
+            } else {
+                loginSection.classList.remove('hidden');
+                mainAppWrapper.classList.add('hidden');
+                barcodeModal.style.display = 'none';
+                scannerModal.style.display = 'none';
+            }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await signInWithEmailAndPassword(auth, loginForm.email.value, loginForm.password.value);
+            } catch (err) {
+                alert(`Error al iniciar sesión: ${err.message}`);
+            }
+        });
+
+        // ====== UTILS ======
+        function showMessage(el, msg, type = 'success', timeout = 5000) {
+            el.textContent = msg;
+            el.className = `message-box ${type === 'success' ? 'message-success' : 'message-error'}`;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, timeout);
         }
 
-        // ==== Modales ====
-        const barcodeModal=document.getElementById('barcodeModal'), closeBarcodeModalBtn=document.getElementById('closeBarcodeModalBtn');
-        const generateBarcodeBtn=document.getElementById('generateBarcodeBtn'), barcodeSvg=document.getElementById('barcodeSvg'), barcodeDataText=document.getElementById('barcodeDataText');
-        generateBarcodeBtn.addEventListener('click',()=>{ let codigo=document.getElementById('codigo').value, numero=document.getElementById('numero').value, letra=document.getElementById('letra').value.toUpperCase(), anio=document.getElementById('anio').value;
-            if(!codigo||!numero||!letra||!anio){ alert("Completa Código, Número, Letra y Año"); return;}
-            let val=`${codigo}-${numero}-${letra}-${anio}`; JsBarcode(barcodeSvg,val,{format:"CODE128"}); barcodeDataText.textContent=val; barcodeModal.style.display="flex"; });
-        closeBarcodeModalBtn.addEventListener('click',()=>{ barcodeModal.style.display="none"; });
+        function clearInputs() {
+            expedienteForm.reset();
+        }
 
-        const scanBarcodeBtn=document.getElementById('scanBarcodeBtn'), scannerModal=document.getElementById('scannerModal'), closeScannerModalBtn=document.getElementById('closeScannerModalBtn'), scannerMessage=document.getElementById('scannerMessage');
-        let html5QrCode=null;
-        scanBarcodeBtn.addEventListener('click',()=>{ scannerModal.style.display="flex"; if(!html5QrCode){ html5QrCode=new Html5Qrcode("reader"); }
-            html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:250},(decodedText)=>{ scannerMessage.textContent=`Detectado: ${decodedText}`; filterAndRenderResults(decodedText); closeScanner(); }); });
-        function closeScanner(){ if(html5QrCode){ html5QrCode.stop().then(()=>{ scannerModal.style.display="none"; scannerMessage.textContent=""; }); } else { scannerModal.style.display="none"; } }
-        closeScannerModalBtn.addEventListener('click',closeScanner);
+        // ====== GUARDAR MOVIMIENTO ======
+        expedienteForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            saveBtn.disabled = true;
+            saveBtn.classList.add('btn-disabled');
 
-        // ==== Cerrar modales con ESC ====
-        document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ barcodeModal.style.display="none"; closeScanner(); }});
+            const codigo = document.getElementById('codigo').value.trim();
+            const numero = document.getElementById('numero').value.trim();
+            const letra = (document.getElementById('letra').value || '').toUpperCase().trim();
+            const anio = document.getElementById('anio').value.trim();
+            const oficina = document.getElementById('oficinaInput').value.trim();
+            const movimientoTipoEl = document.querySelector('input[name="movimientoTipo"]:checked');
+            const movimientoTipo = movimientoTipoEl ? movimientoTipoEl.value : null;
+
+            const circunscripcion = document.getElementById('circunscripcion').value || null;
+            const seccion = document.getElementById('seccion').value || null;
+            const chacra = document.getElementById('chacra').value || null;
+            const quinta = document.getElementById('quinta').value || null;
+            const fraccion = document.getElementById('fraccion').value || null;
+            const manzana = document.getElementById('manzana').value || null;
+            const parcela = document.getElementById('parcela').value || null;
+            const subparcela = document.getElementById('subparcela').value || null;
+            const subsuelo = document.getElementById('subsuelo').value || null;
+            const partidaProvincial = document.getElementById('partidaProvincial').value || null;
+            const partidaMunicipal = document.getElementById('partidaMunicipal').value || null;
+            const observaciones = document.getElementById('observaciones').value || null;
+
+            if (!codigo || !numero || !letra || !anio || !oficina || !movimientoTipo) {
+                showMessage(saveMessage, 'Completá los campos obligatorios (Código, Número, Letra, Año, Oficina y Movimiento).', 'error');
+                saveBtn.disabled = false;
+                saveBtn.classList.remove('btn-disabled');
+                return;
+            }
+
+            const existingQuery = query(
+                collection(db, 'expedientes'),
+                where('codigo', '==', codigo),
+                where('numero', '==', numero),
+                where('letra', '==', letra),
+                where('anio', '==', anio)
+            );
+
+            try {
+                const qs = await getDocs(existingQuery);
+                if (!qs.empty) {
+                    // actualizar
+                    const docRef = qs.docs[0].ref;
+                    await updateDoc(docRef, {
+                        oficina,
+                        movimiento: movimientoTipo,
+                        circunscripcion, seccion, chacra, quinta, fraccion, manzana, parcela, subparcela, subsuelo,
+                        partidaProvincial, partidaMunicipal, observaciones,
+                        fecha: new Date().toLocaleString(),
+                        userId: currentUserId,
+                        userName: currentUserName
+                    });
+                    showMessage(saveMessage, 'Expediente actualizado correctamente.', 'success');
+                } else {
+                    // nuevo documento
+                    const barcodeValue = `${codigo}-${numero}-${letra}-${anio}`;
+                    const movimientoObj = {
+                        codigo, numero, letra, anio, oficina,
+                        movimiento: movimientoTipo,
+                        circunscripcion, seccion, chacra, quinta, fraccion, manzana, parcela, subparcela, subsuelo,
+                        partidaProvincial, partidaMunicipal, observaciones,
+                        fecha: new Date().toLocaleString(),
+                        userId: currentUserId,
+                        userName: currentUserName,
+                        barcode: barcodeValue
+                    };
+                    await addDoc(collection(db, 'expedientes'), movimientoObj);
+                    showMessage(saveMessage, 'Expediente cargado correctamente.', 'success');
+                }
+                clearInputs();
+            } catch (err) {
+                console.error(err);
+                showMessage(saveMessage, 'Error al guardar expediente. Revisa consola.', 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.classList.remove('btn-disabled');
+            }
+        });
+
+        // ====== GENERAR CÓDIGO (modal) ======
+        generateBarcodeBtn.addEventListener('click', async () => {
+            const codigo = document.getElementById('codigo').value.trim();
+            const numero = document.getElementById('numero').value.trim();
+            const letra = (document.getElementById('letra').value || '').toUpperCase().trim();
+            const anio = document.getElementById('anio').value.trim();
+
+            if (!codigo || !numero || !letra || !anio) {
+                showMessage(saveMessage, 'Completá Código, Número, Letra y Año antes de generar.', 'error');
+                return;
+            }
+
+            // buscamos si hay barcode guardado (opcional)
+            try {
+                const q = query(collection(db, 'expedientes'),
+                    where('codigo', '==', codigo),
+                    where('numero', '==', numero),
+                    where('letra', '==', letra),
+                    where('anio', '==', anio)
+                );
+                const qs = await getDocs(q);
+                let val = `${codigo}-${numero}-${letra}-${anio}`;
+                if (!qs.empty) {
+                    const data = qs.docs[0].data();
+                    if (data.barcode) val = data.barcode;
+                }
+
+                // Generar SVG y mostrar modal
+                JsBarcode(barcodeSvg, val, { format: "CODE128", displayValue: true, width: 2, height: 80, fontSize: 16 });
+                barcodeDataText.textContent = val;
+                barcodeModal.style.display = 'flex';
+            } catch (err) {
+                console.error("Error generar barcode:", err);
+                showMessage(saveMessage, 'Error al generar el código.', 'error');
+            }
+        });
+
+        closeBarcodeModalBtn.addEventListener('click', () => {
+            barcodeModal.style.display = 'none';
+        });
+
+        // Imprimir: abrimos una ventana temporal con el SVG para una impresión fiable
+        printBarcodeBtn.addEventListener('click', () => {
+            try {
+                const svgMarkup = barcodeSvg.outerHTML;
+                const text = barcodeDataText.textContent || '';
+                const win = window.open('', '_blank', 'width=600,height=400');
+                if (!win) { alert('Permite popups para imprimir'); return; }
+                win.document.write(`
+                    <html><head>
+                        <title>Imprimir Código</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding:20px; display:flex; align-items:center; justify-content:center; flex-direction:column; }
+                            svg{ max-width:100%; height:auto; }
+                            .label { margin-top:10px; color:#333; }
+                        </style>
+                    </head>
+                    <body>
+                        <div id="printableArea">
+                            ${svgMarkup}
+                            <div class="label">${text}</div>
+                        </div>
+                        <script>
+                            window.onload = function(){ setTimeout(()=>{ window.print(); window.close(); }, 150); };
+                        </script>
+                    </body></html>
+                `);
+                win.document.close();
+            } catch (err) {
+                console.error("Error imprimir:", err);
+                alert('Error al intentar imprimir. Revisa la consola.');
+            }
+        });
+
+        // ====== ESCÁNER ======
+        scanBarcodeBtn.addEventListener('click', async () => {
+            scannerMessage.textContent = 'Iniciando escáner...';
+            scannerModal.style.display = 'flex';
+
+            // si había instancia previa, detenerla
+            if (html5QrCode) {
+                try { await html5QrCode.stop(); html5QrCode.clear(); } catch(_) {}
+            }
+
+            html5QrCode = new Html5Qrcode("reader");
+
+            const qrSuccess = async (decodedText, decodedResult) => {
+                scannerMessage.textContent = `Código escaneado: ${decodedText}`;
+                try { await html5QrCode.stop(); await html5QrCode.clear(); } catch(e){ console.warn('stop/clear:',e); }
+                scannerModal.style.display = 'none';
+                // llenar resultados con barcode
+                clearSearchResults();
+                filterAndRenderResults(decodedText);
+            };
+
+            const qrError = (err) => {
+                // ignore frequent frame errors
+                // scannerMessage.textContent = 'Apuntá el código a la cámara...';
+            };
+
+            const config = { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true };
+            try {
+                await html5QrCode.start({ facingMode: "environment" }, config, qrSuccess, qrError);
+                scannerMessage.textContent = 'Escaneando...';
+            } catch (err) {
+                console.error("Error iniciar cámara:", err);
+                scannerMessage.textContent = `Error al iniciar la cámara: ${err}. Verificá permisos.`;
+            }
+        });
+
+        async function closeScannerGracefully() {
+            if (html5QrCode) {
+                try { await html5QrCode.stop(); await html5QrCode.clear(); } catch (e) { console.warn(e); }
+            }
+            scannerModal.style.display = 'none';
+            scannerMessage.textContent = '';
+        }
+
+        closeScannerModalBtn.addEventListener('click', () => closeScannerGracefully());
+
+        // ====== BÚSQUEDA ======
+        async function filterAndRenderResults(barcodeScanned = null) {
+            resultsBody.innerHTML = '';
+            searchMessage.style.display = 'none';
+
+            let hasCriteria = false;
+            let qRef = collection(db, 'expedientes');
+
+            if (barcodeScanned) {
+                // barra exacta
+                qRef = query(qRef, where('barcode', '==', barcodeScanned));
+                hasCriteria = true;
+            } else {
+                const scodigo = document.getElementById('searchCodigo').value.trim();
+                const snumero = document.getElementById('searchNumero').value.trim();
+                const sletra = (document.getElementById('searchLetra').value || '').toUpperCase().trim();
+                const sanio = document.getElementById('searchAnio').value.trim();
+                const soficina = document.getElementById('searchOficina').value.trim();
+
+                if (scodigo) { qRef = query(qRef, where('codigo', '==', scodigo)); hasCriteria = true; }
+                if (snumero) { qRef = query(qRef, where('numero', '==', snumero)); hasCriteria = true; }
+                if (sletra) { qRef = query(qRef, where('letra', '==', sletra)); hasCriteria = true; }
+                if (sanio) { qRef = query(qRef, where('anio', '==', sanio)); hasCriteria = true; }
+                if (soficina) { qRef = query(qRef, where('oficina', '==', soficina)); hasCriteria = true; }
+            }
+
+            if (!hasCriteria) {
+                showMessage(searchMessage, 'Ingresa al menos un criterio o escaneá un código.', 'error');
+                return;
+            }
+
+            try {
+                const qs = await getDocs(qRef);
+                if (qs.empty) { showMessage(searchMessage, 'No se encontraron expedientes.', 'error'); return; }
+
+                let html = '';
+                qs.forEach(d => {
+                    const data = d.data();
+                    html += `<tr>
+                        <td class="no-wrap">${data.codigo}-${data.numero}-${data.letra}-${data.anio}</td>
+                        <td>${data.oficina || ''}</td>
+                        <td>${data.movimiento || ''}</td>
+                        <td>${data.fecha || ''}</td>
+                        <td>${data.userName || ''}</td>
+                    </tr>`;
+                });
+                resultsBody.innerHTML = html;
+            } catch (err) {
+                console.error("Error buscar:", err);
+                showMessage(searchMessage, 'Error al buscar expedientes.', 'error');
+            }
+        }
+
+        searchBtn.addEventListener('click', () => filterAndRenderResults(null));
+        clearBtn.addEventListener('click', () => {
+            resultsBody.innerHTML = '';
+            searchMessage.style.display = 'none';
+            ['searchCodigo','searchNumero','searchLetra','searchAnio','searchOficina'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+        });
+
+        // Toggles
+        showNomenclaturaBtn.addEventListener('click', () => nomenclaturaFields.classList.toggle('hidden'));
+        showAdvancedSearchBtn.addEventListener('click', () => advancedSearchFields.classList.toggle('hidden'));
+
+        // ESC para cerrar modales
+        document.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Escape') {
+                if (barcodeModal.style.display === 'flex') barcodeModal.style.display = 'none';
+                if (scannerModal.style.display === 'flex') closeScannerGracefully();
+            }
+        });
+
+        // Antes de salir / refresh: detener cámara si quedó abierta (por las dudas)
+        window.addEventListener('beforeunload', async () => {
+            if (html5QrCode) {
+                try { await html5QrCode.stop(); await html5QrCode.clear(); } catch(_) {}
+            }
+        });
     </script>
 </body>
 </html>
