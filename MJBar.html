@@ -1,31 +1,19 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Control de Expedientes</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  body{font-family:'Inter',sans-serif;background:#f3f4f6;color:#1f2937}
-  .container{max-width:900px;padding:2rem}
-  .input-group label{font-weight:500;display:block;margin-bottom:.25rem}
-  .input-group input,.input-group textarea{padding:.5rem;border:1px solid #d1d5db;border-radius:.5rem;width:100%;transition:all .15s}
-  .input-group input:focus,.input-group textarea:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
-  .btn{padding:.75rem 1.25rem;border-radius:.5rem;font-weight:600}
-  .btn-primary{background:#3b82f6;color:#fff}
-  .btn-secondary{background:#e5e7eb;color:#1f2937}
-  .btn-disabled{opacity:.6;cursor:not-allowed}
-  .message-box{display:none;padding:1rem;border-radius:.5rem;margin-top:1rem;font-weight:500}
-  .message-success{background:#dcfce7;color:#166534}
-  .message-error{background:#fee2e2;color:#991b1b}
-  .results-table th,.results-table td{padding:.75rem;text-align:left;border-bottom:1px solid #eee}
-  .footer{margin-top:2rem;font-size:.75rem;color:#6b7280;text-align:center}
-  #barcodeModal,#scannerModal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;justify-content:center;align-items:center;z-index:60}
-  #barcodeModalContent,#scannerModalContent{background:#fff;padding:1.5rem;border-radius:.5rem;box-shadow:0 8px 30px rgba(0,0,0,.15);max-width:90%;width:420px;text-align:center}
-  #reader{width:320px;height:320px}
-  @media print{body *{visibility:hidden}#printableArea,#printableArea *{visibility:visible}#printableArea{position:absolute;left:0;top:0;width:100%}}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Control de Expedientes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:'Inter',sans-serif;background:#f3f4f6;color:#1f2937}
+    .tab-active{background:#3b82f6;color:white}
+    .tab-inactive{background:#e5e7eb;color:#1f2937}
+    #barcodeModal,#scannerModal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;justify-content:center;align-items:center;z-index:60}
+    #barcodeModalContent,#scannerModalContent{background:#fff;padding:1.5rem;border-radius:.5rem;max-width:90%;width:420px;text-align:center}
+    #reader{width:320px;height:320px}
+  </style>
 </head>
 <body class="flex items-start justify-center min-h-screen p-4">
 
@@ -33,447 +21,192 @@
   <div id="login-section" class="flex flex-col items-center justify-center min-h-screen w-full p-4">
     <div class="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full">
       <h2 class="text-2xl font-bold text-center text-blue-800 mb-6">Iniciar Sesión</h2>
-      <form id="loginForm" class="flex flex-col gap-4" autocomplete="on">
-        <div class="input-group"><label for="email">Correo Electrónico</label><input id="email" name="email" type="email" required></div>
-        <div class="input-group"><label for="password">Contraseña</label><input id="password" name="password" type="password" required></div>
-        <button class="btn btn-primary w-full" type="submit">Ingresar</button>
+      <form id="loginForm" class="flex flex-col gap-4">
+        <div>
+          <label for="email">Correo Electrónico</label>
+          <input id="email" type="email" required class="w-full border rounded p-2"/>
+        </div>
+        <div>
+          <label for="password">Contraseña</label>
+          <input id="password" type="password" required class="w-full border rounded p-2"/>
+        </div>
+        <button class="bg-blue-600 text-white py-2 rounded" type="submit">Ingresar</button>
       </form>
     </div>
   </div>
 
   <!-- APP -->
   <div id="main-app-wrapper" class="container bg-white rounded-xl shadow-lg flex flex-col relative p-8 gap-8 mt-6 hidden">
-
     <h1 class="text-3xl font-bold text-center text-blue-800">Control de Expedientes</h1>
 
-    <!-- Cargar Movimiento -->
-    <section id="cargar-movimiento">
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-4">
+      <button id="tabCarga" class="flex-1 py-2 rounded tab-active">CARGA</button>
+      <button id="tabBusqueda" class="flex-1 py-2 rounded tab-inactive">BÚSQUEDA</button>
+    </div>
+
+    <!-- CARGA -->
+    <section id="cargaSection">
       <form id="expedienteForm" class="flex flex-col gap-6">
         <h2 class="text-xl font-bold text-gray-700">Cargar Movimiento</h2>
 
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div><label>Código</label><input id="codigo" type="number" required class="w-full border rounded p-2"></div>
+          <div><label>Número</label><input id="numero" type="number" required class="w-full border rounded p-2"></div>
+          <div><label>Letra</label><input id="letra" maxlength="1" required class="w-full border rounded p-2 uppercase"></div>
+          <div><label>Año</label><input id="anio" type="number" required class="w-full border rounded p-2"></div>
+          <div><label>Extracto</label><input id="extracto" type="text" class="w-full border rounded p-2"></div>
+        </div>
+
+        <!-- Nomenclatura -->
+        <h3 class="font-bold text-gray-600">Nomenclatura</h3>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div class="input-group"><label for="codigo">Código</label><input id="codigo" type="number" placeholder="Ej: 4078" required></div>
-          <div class="input-group"><label for="numero">Número</label><input id="numero" type="number" placeholder="Ej: 255255" required></div>
-          <div class="input-group"><label for="letra">Letra</label><input id="letra" type="text" maxlength="1" class="uppercase" placeholder="Ej: I" required></div>
-          <div class="input-group"><label for="anio">Año</label><input id="anio" type="number" placeholder="Ej: 2025" required></div>
+          <div><label>Circunscripción</label><input id="circunscripcion" type="number" class="w-full border rounded p-2"></div>
+          <div><label>Sección</label><input id="seccion" type="text" class="w-full border rounded p-2"></div>
+          <div><label>Chacra</label><input id="chacra" type="text" class="w-full border rounded p-2"></div>
+          <div><label>L. CH.</label><input id="lch" type="text" class="w-full border rounded p-2"></div>
+          <div><label>Quinta</label><input id="quinta" type="text" class="w-full border rounded p-2"></div>
+          <div><label>L. Qt.</label><input id="lqt" type="text" class="w-full border rounded p-2"></div>
+          <div><label>Fracción</label><input id="fraccion" type="text" class="w-full border rounded p-2"></div>
+          <div><label>L. Fr.</label><input id="lfr" type="text" class="w-full border rounded p-2"></div>
+          <div><label>Manzana</label><input id="manzana" type="text" class="w-full border rounded p-2"></div>
+          <div><label>L. Mz.</label><input id="lmz" type="text" class="w-full border rounded p-2"></div>
+          <div><label>Parcela</label><input id="parcela" type="text" class="w-full border rounded p-2"></div>
+          <div><label>L. Pc.</label><input id="lpc" type="text" class="w-full border rounded p-2"></div>
+          <div><label>Partida Provincial</label><input id="partidaProv" type="number" class="w-full border rounded p-2"></div>
+          <div><label>Partida Municipal</label><input id="partidaMun" type="number" class="w-full border rounded p-2"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="input-group"><label for="oficinaInput">Oficina</label><input id="oficinaInput" type="text" placeholder="Ej: Mesa de Entradas" required></div>
-          <div class="input-group"><label>Movimiento</label>
-            <div class="flex gap-4 items-center mt-2">
-              <label class="flex items-center gap-2"><input type="radio" name="movimientoTipo" value="enviamos" required> Enviamos</label>
-              <label class="flex items-center gap-2"><input type="radio" name="movimientoTipo" value="recibimos" required> Recibimos</label>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 hidden" id="nomenclaturaFields">
-          <div class="input-group"><label for="circunscripcion">Circunscripción</label><input id="circunscripcion" type="number" placeholder="Ej: 4078"></div>
-          <div class="input-group"><label for="seccion">Sección</label><input id="seccion" type="text" placeholder="Ej: B"></div>
-          <div class="input-group"><label for="chacra">Chacra</label><input id="chacra" type="text" placeholder="Ej: B"></div>
-          <div class="input-group"><label for="quinta">Quinta</label><input id="quinta" type="text" placeholder="Ej: B"></div>
-          <div class="input-group"><label for="fraccion">Fracción</label><input id="fraccion" type="text" placeholder="Ej: B"></div>
-          <div class="input-group"><label for="manzana">Manzana</label><input id="manzana" type="text" placeholder="Ej: B"></div>
-          <div class="input-group"><label for="parcela">Parcela</label><input id="parcela" type="text" placeholder="Ej: B"></div>
-          <div class="input-group"><label for="subparcela">Sub-Parcela</label><input id="subparcela" type="text" placeholder="Ej: B"></div>
-          <div class="input-group"><label for="subsuelo">Subsuelo</label><input id="subsuelo" type="text" placeholder="Ej: 1"></div>
-          <div class="input-group"><label for="partidaProvincial">Partida Provincial</label><input id="partidaProvincial" type="number" placeholder="Ej: 123456"></div>
-          <div class="input-group"><label for="partidaMunicipal">Partida Municipal</label><input id="partidaMunicipal" type="number" placeholder="Ej: 654321"></div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="input-group"><label for="observaciones">Observaciones</label><textarea id="observaciones" placeholder="Observaciones..." rows="3"></textarea></div>
+        <div><label>Oficina</label><input id="oficinaInput" type="text" required class="w-full border rounded p-2"></div>
+        <div class="flex gap-4">
+          <label><input type="radio" name="movimientoTipo" value="enviamos" required> Enviamos</label>
+          <label><input type="radio" name="movimientoTipo" value="recibimos" required> Recibimos</label>
         </div>
 
         <div class="flex gap-4">
           <button id="saveBtn" type="submit" class="btn btn-primary">Cargar Expediente</button>
-          <button id="showNomenclaturaBtn" type="button" class="btn btn-secondary">Mostrar Nomenclatura</button>
+          <button id="generateBarcodeBtn" type="button" class="btn btn-primary">Generar Código</button>
         </div>
-
-        <div class="flex flex-col sm:flex-row gap-4">
-          <button type="button" id="generateBarcodeBtn" class="btn btn-primary w-full">Generar Código</button>
-        </div>
-
-        <div id="saveMessage" class="message-box message-success"></div>
       </form>
     </section>
 
-    <hr class="border-gray-200">
-
-    <!-- Buscar -->
-    <section id="buscar-expediente">
-      <h2 class="text-xl font-bold text-gray-700">Buscar expediente</h2>
-
-      <div id="advancedSearchFields" class="grid grid-cols-1 md:grid-cols-4 gap-4 hidden mt-3">
-        <div class="input-group"><label for="searchCodigo">Código</label><input id="searchCodigo" type="number" placeholder="Código"></div>
-        <div class="input-group"><label for="searchNumero">Número</label><input id="searchNumero" type="number" placeholder="Número"></div>
-        <div class="input-group"><label for="searchLetra">Letra</label><input id="searchLetra" type="text" class="uppercase" placeholder="Letra"></div>
-        <div class="input-group"><label for="searchAnio">Año</label><input id="searchAnio" type="number" placeholder="Año"></div>
-        <div class="input-group"><label for="searchOficina">Oficina</label><input id="searchOficina" type="text" placeholder="Oficina"></div>
+    <!-- BÚSQUEDA -->
+    <section id="busquedaSection" class="hidden">
+      <h2 class="text-xl font-bold text-gray-700">Buscar Expediente</h2>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div><label>Código</label><input id="searchCodigo" type="number" class="w-full border rounded p-2"></div>
+        <div><label>Número</label><input id="searchNumero" type="number" class="w-full border rounded p-2"></div>
+        <div><label>Letra</label><input id="searchLetra" type="text" class="w-full border rounded p-2 uppercase"></div>
+        <div><label>Año</label><input id="searchAnio" type="number" class="w-full border rounded p-2"></div>
+        <div><label>Extracto</label><input id="searchExtracto" type="text" class="w-full border rounded p-2"></div>
       </div>
 
-      <div class="flex flex-col sm:flex-row gap-4 mt-3">
+      <!-- Nomenclatura -->
+      <h3 class="font-bold text-gray-600 mt-4">Nomenclatura</h3>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div><label>Circunscripción</label><input id="searchCircunscripcion" type="number" class="w-full border rounded p-2"></div>
+        <div><label>Sección</label><input id="searchSeccion" type="text" class="w-full border rounded p-2"></div>
+        <div><label>Chacra</label><input id="searchChacra" type="text" class="w-full border rounded p-2"></div>
+        <div><label>L. CH.</label><input id="searchLch" type="text" class="w-full border rounded p-2"></div>
+        <div><label>Quinta</label><input id="searchQuinta" type="text" class="w-full border rounded p-2"></div>
+        <div><label>L. Qt.</label><input id="searchLqt" type="text" class="w-full border rounded p-2"></div>
+        <div><label>Fracción</label><input id="searchFraccion" type="text" class="w-full border rounded p-2"></div>
+        <div><label>L. Fr.</label><input id="searchLfr" type="text" class="w-full border rounded p-2"></div>
+        <div><label>Manzana</label><input id="searchManzana" type="text" class="w-full border rounded p-2"></div>
+        <div><label>L. Mz.</label><input id="searchLmz" type="text" class="w-full border rounded p-2"></div>
+        <div><label>Parcela</label><input id="searchParcela" type="text" class="w-full border rounded p-2"></div>
+        <div><label>L. Pc.</label><input id="searchLpc" type="text" class="w-full border rounded p-2"></div>
+        <div><label>Partida Provincial</label><input id="searchPartidaProv" type="number" class="w-full border rounded p-2"></div>
+        <div><label>Partida Municipal</label><input id="searchPartidaMun" type="number" class="w-full border rounded p-2"></div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-4 mt-4">
         <button id="searchBtn" class="btn btn-primary w-full">Buscar</button>
-        <button id="clearBtn" class="btn btn-secondary w-full">Limpiar Búsqueda</button>
-        <button id="showAdvancedSearchBtn" class="btn btn-secondary w-full">Búsqueda Avanzada</button>
+        <button id="clearBtn" class="btn btn-secondary w-full">Limpiar</button>
         <button id="scanBarcodeBtn" class="btn btn-primary w-full">Escanear Código</button>
       </div>
 
       <div id="searchResults" class="rounded-lg shadow overflow-hidden mt-4">
         <table class="w-full results-table bg-white">
-          <thead>
-            <tr><th>Expediente</th><th>Oficina</th><th>Movimiento</th><th>Fecha</th><th>Usuario</th></tr>
-          </thead>
+          <thead><tr><th>Expediente</th><th>Oficina</th><th>Movimiento</th><th>Fecha</th><th>Usuario</th></tr></thead>
           <tbody id="resultsBody"></tbody>
         </table>
       </div>
-
       <div id="searchMessage" class="message-box message-error hidden"></div>
     </section>
 
-    <footer class="footer"><p>&copy; 2025. Todos los derechos reservados.</p></footer>
   </div>
 
-  <!-- Modal Código -->
-  <div id="barcodeModal" aria-hidden="true">
-    <div id="barcodeModalContent">
-      <h3 class="text-lg font-bold mb-2">Código de Barras</h3>
-      <svg id="barcodeSvg" class="w-full h-auto mb-2" xmlns="http://www.w3.org/2000/svg"></svg>
-      <p id="barcodeDataText" class="text-sm text-gray-600 mb-4"></p>
-      <div class="flex justify-center gap-4">
-        <button id="printBarcodeBtn" class="btn btn-primary">Imprimir</button>
-        <button id="closeBarcodeModalBtn" class="btn btn-secondary">Cerrar</button>
-      </div>
+  <!-- Modales -->
+  <div id="barcodeModal"><div id="barcodeModalContent">
+    <h3 class="text-lg font-bold">Código de Barras</h3>
+    <svg id="barcodeSvg" class="w-full h-auto"></svg>
+    <p id="barcodeDataText" class="text-sm text-gray-600"></p>
+    <div class="flex gap-4 justify-center mt-4">
+      <button id="printBarcodeBtn" class="btn btn-primary">Imprimir</button>
+      <button id="closeBarcodeModalBtn" class="btn btn-secondary">Cerrar</button>
     </div>
-  </div>
+  </div></div>
 
-  <!-- Modal Escáner -->
-  <div id="scannerModal" aria-hidden="true">
-    <div id="scannerModalContent">
-      <h3 class="text-lg font-bold mb-2">Escanear Código de Barras</h3>
-      <div id="reader" class="mx-auto mb-3"></div>
-      <p id="scannerMessage" class="text-sm text-gray-600 mb-3"></p>
-      <div class="flex justify-center">
-        <button id="closeScannerModalBtn" class="btn btn-secondary">Cerrar Escáner</button>
-      </div>
-    </div>
-  </div>
+  <div id="scannerModal"><div id="scannerModalContent">
+    <h3 class="text-lg font-bold">Escanear Código</h3>
+    <div id="reader"></div>
+    <p id="scannerMessage"></p>
+    <button id="closeScannerModalBtn" class="btn btn-secondary mt-4">Cerrar Escáner</button>
+  </div></div>
 
-  <!-- libs final -->
+  <!-- Libs -->
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
-  <!-- app -->
+  <!-- App script -->
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // Config (tuya)
-  const firebaseConfig = {
-    apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
-    authDomain: "exptcoord.firebaseapp.com",
-    projectId: "exptcoord",
-    storageBucket: "exptcoord.firebasestorage.app",
-    messagingSenderId: "416639039117",
-    appId: "1:416639039117:web:d9422f6d853a760a3014c4",
-    measurementId: "G-94PRRLFZV4"
-  };
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  // refs
-  const loginSection = document.getElementById('login-section');
-  const mainAppWrapper = document.getElementById('main-app-wrapper');
-  const loginForm = document.getElementById('loginForm');
-
-  const expedienteForm = document.getElementById('expedienteForm');
-  const saveBtn = document.getElementById('saveBtn');
-  const saveMessage = document.getElementById('saveMessage');
-  const showNomenclaturaBtn = document.getElementById('showNomenclaturaBtn');
-  const nomenclaturaFields = document.getElementById('nomenclaturaFields');
-
-  const generateBarcodeBtn = document.getElementById('generateBarcodeBtn');
-  const barcodeModal = document.getElementById('barcodeModal');
-  const barcodeSvg = document.getElementById('barcodeSvg');
-  const barcodeDataText = document.getElementById('barcodeDataText');
-  const printBarcodeBtn = document.getElementById('printBarcodeBtn');
-  const closeBarcodeModalBtn = document.getElementById('closeBarcodeModalBtn');
-
-  const scanBarcodeBtn = document.getElementById('scanBarcodeBtn');
-  const scannerModal = document.getElementById('scannerModal');
-  const readerDiv = document.getElementById('reader');
-  const scannerMessage = document.getElementById('scannerMessage');
-  const closeScannerModalBtn = document.getElementById('closeScannerModalBtn');
-
-  const searchBtn = document.getElementById('searchBtn');
-  const clearBtn = document.getElementById('clearBtn');
-  const showAdvancedSearchBtn = document.getElementById('showAdvancedSearchBtn');
-  const advancedSearchFields = document.getElementById('advancedSearchFields');
-  const resultsBody = document.getElementById('resultsBody');
-  const searchMessage = document.getElementById('searchMessage');
-
-  let html5QrCode = null;
-  let currentUserId = null;
-  let currentUserName = '';
-
-  // auth flow
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      currentUserId = user.uid;
-      try {
-        const userDocRef = doc(db, 'users', currentUserId);
-        const userDoc = await getDoc(userDocRef);
-        currentUserName = userDoc.exists() ? (userDoc.data().name || user.email) : user.email;
-        if (!userDoc.exists()) await setDoc(userDocRef, { name: user.email }, { merge: true });
-      } catch (e) {
-        currentUserName = user.email;
-      }
-      loginSection.classList.add('hidden');
-      mainAppWrapper.classList.remove('hidden');
-      barcodeModal.style.display = 'none';
-      scannerModal.style.display = 'none';
-    } else {
-      loginSection.classList.remove('hidden');
-      mainAppWrapper.classList.add('hidden');
-      barcodeModal.style.display = 'none';
-      scannerModal.style.display = 'none';
-    }
-  });
-
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    try {
-      await signInWithEmailAndPassword(auth, loginForm.email.value, loginForm.password.value);
-    } catch (err) {
-      alert(`Error al iniciar sesión: ${err.message}`);
-    }
-  });
-
-  // util message
-  function showMessage(el, msg, type='success', timeout=5000){
-    el.textContent = msg;
-    el.className = `message-box ${type==='success'?'message-success':'message-error'}`;
-    el.style.display = 'block';
-    setTimeout(()=>{ el.style.display='none'; }, timeout);
-  }
-
-  function clearInputs(){ expedienteForm.reset(); }
-
-  // guardar expediente
-  expedienteForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    saveBtn.disabled = true; saveBtn.classList.add('btn-disabled');
-
-    const codigo = (document.getElementById('codigo').value || '').trim();
-    const numero = (document.getElementById('numero').value || '').trim();
-    const letra = ((document.getElementById('letra').value||'').toUpperCase()).trim();
-    const anio = (document.getElementById('anio').value || '').trim();
-    const oficina = (document.getElementById('oficinaInput').value || '').trim();
-    const movimientoTipoEl = document.querySelector('input[name="movimientoTipo"]:checked');
-    const movimientoTipo = movimientoTipoEl ? movimientoTipoEl.value : null;
-
-    if(!codigo || !numero || !letra || !anio || !oficina || !movimientoTipo){
-      showMessage(saveMessage,'Completá los campos obligatorios (Código, Número, Letra, Año, Oficina y Movimiento).','error');
-      saveBtn.disabled=false; saveBtn.classList.remove('btn-disabled');
-      return;
-    }
-
-    const existingQuery = query(collection(db,'expedientes'),
-      where('codigo','==',codigo),
-      where('numero','==',numero),
-      where('letra','==',letra),
-      where('anio','==',anio)
-    );
-
-    try{
-      const qs = await getDocs(existingQuery);
-      if(!qs.empty){
-        const docRef = qs.docs[0].ref;
-        await updateDoc(docRef, {
-          oficina, movimiento: movimientoTipo, fecha: new Date().toLocaleString(),
-          userId: currentUserId, userName: currentUserName
-        });
-        showMessage(saveMessage,'Expediente actualizado correctamente.','success');
-      } else {
-        const barcodeValue = `${codigo}-${numero}-${letra}-${anio}`;
-        const movimientoObj = { codigo, numero, letra, anio, oficina, movimiento: movimientoTipo, fecha: new Date().toLocaleString(), userId: currentUserId, userName: currentUserName, barcode: barcodeValue };
-        await addDoc(collection(db,'expedientes'), movimientoObj);
-        showMessage(saveMessage,'Expediente cargado correctamente.','success');
-      }
-      clearInputs();
-    }catch(err){
-      console.error(err);
-      showMessage(saveMessage,'Error al guardar expediente. Revisa consola.','error');
-    } finally {
-      saveBtn.disabled=false; saveBtn.classList.remove('btn-disabled');
-    }
-  });
-
-  // generar código
-  generateBarcodeBtn.addEventListener('click', async () => {
-    const codigo = (document.getElementById('codigo').value || '').trim();
-    const numero = (document.getElementById('numero').value || '').trim();
-    const letra = ((document.getElementById('letra').value||'').toUpperCase()).trim();
-    const anio = (document.getElementById('anio').value || '').trim();
-    if(!codigo||!numero||!letra||!anio){ showMessage(saveMessage,'Completá Código, Número, Letra y Año antes de generar.','error'); return; }
-
-    try{
-      const q = query(collection(db,'expedientes'),
-        where('codigo','==',codigo),
-        where('numero','==',numero),
-        where('letra','==',letra),
-        where('anio','==',anio)
-      );
-      const qs = await getDocs(q);
-      let val = `${codigo}-${numero}-${letra}-${anio}`;
-      if(!qs.empty && qs.docs[0].data().barcode) val = qs.docs[0].data().barcode;
-
-      JsBarcode(barcodeSvg, val, { format:"CODE128", displayValue:true, width:2, height:80, fontSize:16 });
-      barcodeDataText.textContent = val;
-      barcodeModal.style.display = 'flex';
-    }catch(err){
-      console.error('Error generar barcode',err);
-      showMessage(saveMessage,'Error al generar el código.','error');
-    }
-  });
-
-  closeBarcodeModalBtn.addEventListener('click', ()=>{ barcodeModal.style.display='none'; });
-
-  // imprimir: crear blob HTML y abrir en nueva ventana para imprimir
-  printBarcodeBtn.addEventListener('click', ()=> {
-    try{
-      const svgMarkup = barcodeSvg.outerHTML || '';
-      const text = (barcodeDataText.textContent || '');
-      const html = '<!doctype html><html><head><meta charset="utf-8"><title>Imprimir</title><style>body{font-family:Arial,sans-serif;padding:20px;display:flex;flex-direction:column;align-items:center}svg{max-width:100%;height:auto}.label{margin-top:10px;color:#333}</style></head><body><div id="printableArea">' + svgMarkup + '<div class="label">' + text + '</div></div><script>window.onload=function(){setTimeout(function(){window.print();window.close();},150);};<\/script></body></html>';
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const w = window.open(url, '_blank', 'width=600,height=600');
-      if(!w){ alert('Permite popups para imprimir'); URL.revokeObjectURL(url); return; }
-      // la ventana cargará el blob; no necesitamos más
-      setTimeout(()=>{ URL.revokeObjectURL(url); }, 20000);
-    }catch(err){
-      console.error('Error imprimir',err);
-      alert('Error al intentar imprimir. Revisá consola.');
-    }
-  });
-
-  // scanner
-  scanBarcodeBtn.addEventListener('click', async () => {
-    scannerMessage.textContent = 'Iniciando escáner...';
-    scannerModal.style.display = 'flex';
-
-    if(html5QrCode){
-      try{ await html5QrCode.stop(); await html5QrCode.clear(); }catch(_){}
-    }
-    html5QrCode = new Html5Qrcode("reader");
-
-    const qrSuccess = async (decodedText) => {
-      scannerMessage.textContent = `Código escaneado: ${decodedText}`;
-      try{ await html5QrCode.stop(); await html5QrCode.clear(); }catch(e){ console.warn(e); }
-      scannerModal.style.display = 'none';
-      clearSearchResults();
-      filterAndRenderResults(decodedText);
+    // Firebase config tuyo
+    const firebaseConfig = {
+      apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
+      authDomain: "exptcoord.firebaseapp.com",
+      projectId: "exptcoord",
+      storageBucket: "exptcoord.firebasestorage.app",
+      messagingSenderId: "416639039117",
+      appId: "1:416639039117:web:d9422f6d853a760a3014c4",
+      measurementId: "G-94PRRLFZV4"
     };
-    const qrError = ()=>{};
-    const config = { fps:10, qrbox:{width:250,height:250}, rememberLastUsedCamera:true };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    try{
-      await html5QrCode.start({ facingMode:"environment" }, config, qrSuccess, qrError);
-      scannerMessage.textContent = 'Escaneando...';
-    }catch(err){
-      console.error('Error iniciar cámara',err);
-      scannerMessage.textContent = `Error al iniciar la cámara: ${err}. Verificá permisos.`;
-    }
-  });
+    // Tabs
+    const tabCarga = document.getElementById('tabCarga');
+    const tabBusqueda = document.getElementById('tabBusqueda');
+    const cargaSection = document.getElementById('cargaSection');
+    const busquedaSection = document.getElementById('busquedaSection');
 
-  async function closeScannerGracefully(){
-    if(html5QrCode){
-      try{ await html5QrCode.stop(); await html5QrCode.clear(); }catch(e){ console.warn(e); }
-    }
-    scannerModal.style.display = 'none';
-    scannerMessage.textContent = '';
-  }
-  closeScannerModalBtn.addEventListener('click', ()=> closeScannerGracefully());
+    tabCarga.addEventListener('click',()=>{
+      cargaSection.classList.remove('hidden');
+      busquedaSection.classList.add('hidden');
+      tabCarga.classList.add('tab-active');tabCarga.classList.remove('tab-inactive');
+      tabBusqueda.classList.add('tab-inactive');tabBusqueda.classList.remove('tab-active');
+    });
+    tabBusqueda.addEventListener('click',()=>{
+      busquedaSection.classList.remove('hidden');
+      cargaSection.classList.add('hidden');
+      tabBusqueda.classList.add('tab-active');tabBusqueda.classList.remove('tab-inactive');
+      tabCarga.classList.add('tab-inactive');tabCarga.classList.remove('tab-active');
+    });
 
-  // filter & render results (no innerHTML for rows)
-  async function filterAndRenderResults(barcodeScanned = null){
-    resultsBody.innerHTML = '';
-    searchMessage.style.display = 'none';
-
-    let hasCriteria = false;
-    let qRef = collection(db,'expedientes');
-
-    if(barcodeScanned){
-      qRef = query(qRef, where('barcode','==', barcodeScanned));
-      hasCriteria = true;
-    } else {
-      const scodigo = (document.getElementById('searchCodigo').value || '').trim();
-      const snumero = (document.getElementById('searchNumero').value || '').trim();
-      const sletra = ((document.getElementById('searchLetra').value||'').toUpperCase()).trim();
-      const sanio = (document.getElementById('searchAnio').value || '').trim();
-      const soficina = (document.getElementById('searchOficina').value || '').trim();
-
-      if(scodigo){ qRef = query(qRef, where('codigo','==', scodigo)); hasCriteria = true; }
-      if(snumero){ qRef = query(qRef, where('numero','==', snumero)); hasCriteria = true; }
-      if(sletra){ qRef = query(qRef, where('letra','==', sletra)); hasCriteria = true; }
-      if(sanio){ qRef = query(qRef, where('anio','==', sanio)); hasCriteria = true; }
-      if(soficina){ qRef = query(qRef, where('oficina','==', soficina)); hasCriteria = true; }
-    }
-
-    if(!hasCriteria){ showMessage(searchMessage,'Ingresa al menos un criterio o escaneá un código.','error'); return; }
-
-    try{
-      const qs = await getDocs(qRef);
-      if(qs.empty){ showMessage(searchMessage,'No se encontraron expedientes.','error'); return; }
-
-      qs.forEach(docSnap=>{
-        const data = docSnap.data();
-        const tr = document.createElement('tr');
-
-        const td1 = document.createElement('td');
-        td1.className = 'no-wrap';
-        td1.textContent = `${data.codigo}-${data.numero}-${data.letra}-${data.anio}`;
-        tr.appendChild(td1);
-
-        const td2 = document.createElement('td'); td2.textContent = data.oficina || ''; tr.appendChild(td2);
-        const td3 = document.createElement('td'); td3.textContent = data.movimiento || ''; tr.appendChild(td3);
-        const td4 = document.createElement('td'); td4.textContent = data.fecha || ''; tr.appendChild(td4);
-        const td5 = document.createElement('td'); td5.textContent = data.userName || ''; tr.appendChild(td5);
-
-        resultsBody.appendChild(tr);
-      });
-
-    }catch(err){
-      console.error('Error buscar',err);
-      showMessage(searchMessage,'Error al buscar expedientes.','error');
-    }
-  }
-
-  searchBtn.addEventListener('click', ()=> filterAndRenderResults(null));
-  clearBtn.addEventListener('click', ()=>{
-    resultsBody.innerHTML=''; searchMessage.style.display='none';
-    ['searchCodigo','searchNumero','searchLetra','searchAnio','searchOficina'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  });
-
-  // toggles
-  showNomenclaturaBtn.addEventListener('click', ()=> nomenclaturaFields.classList.toggle('hidden'));
-  showAdvancedSearchBtn.addEventListener('click', ()=> advancedSearchFields.classList.toggle('hidden'));
-
-  // ESC cierre modales
-  document.addEventListener('keydown',(ev)=>{
-    if(ev.key === 'Escape'){
-      if(barcodeModal.style.display === 'flex' || barcodeModal.style.display === 'block') barcodeModal.style.display = 'none';
-      if(scannerModal.style.display === 'flex' || scannerModal.style.display === 'block') closeScannerGracefully();
-    }
-  });
-
-  // beforeunload: detener cámara
-  window.addEventListener('beforeunload', async ()=>{
-    if(html5QrCode){ try{ await html5QrCode.stop(); await html5QrCode.clear(); }catch(_){} }
-  });
+    // Login básico
+    onAuthStateChanged(auth, user=>{
+      if(user){document.getElementById('login-section').classList.add('hidden');document.getElementById('main-app-wrapper').classList.remove('hidden');}
+      else{document.getElementById('login-section').classList.remove('hidden');document.getElementById('main-app-wrapper').classList.add('hidden');}
+    });
+    document.getElementById('loginForm').addEventListener('submit',async e=>{
+      e.preventDefault();
+      try{await signInWithEmailAndPassword(auth, e.target.email.value, e.target.password.value);}catch(err){alert(err.message);}
+    });
   </script>
 </body>
 </html>
