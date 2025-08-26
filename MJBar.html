@@ -13,435 +13,97 @@
     <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            color: #1f2937;
-        }
-
-        .container {
-            max-width: 900px;
-            padding: 2rem;
-        }
-
-        .input-group label {
-            font-weight: 500;
-        }
-
-        .input-group input[type="text"],
-        .input-group input[type="password"],
-        .input-group input[type="number"],
-        .input-group textarea {
-            padding: 0.5rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            width: 100%;
-            transition: all 0.2s;
-        }
-
-        .input-group input[type="text"]:focus,
-        .input-group input[type="password"]:focus,
-        .input-group input[type="number"]:focus,
-        .input-group textarea:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
-        }
-
-        .radio-label {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .radio-label input[type="radio"] {
-            accent-color: #3b82f6;
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            transition: background-color 0.2s;
-        }
-
-        .btn-disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .btn-primary {
-            background-color: #3b82f6;
-            color: white;
-        }
-
-        .btn-primary:hover:not(.btn-disabled) {
-            background-color: #2563eb;
-        }
-
-        .btn-secondary {
-            background-color: #e5e7eb;
-            color: #1f2937;
-        }
-
-        .btn-secondary:hover:not(.btn-disabled) {
-            background-color: #d1d5db;
-        }
-
-        .message-box {
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-top: 1rem;
-            font-weight: 500;
-            display: none;
-        }
-
-        .message-success {
-            background-color: #dcfce7;
-            color: #166534;
-        }
-
-        .message-error {
-            background-color: #fee2e2;
-            color: #991b1b;
-        }
-
-        .results-table th,
-        .results-table td {
-            padding: 0.75rem;
-            text-align: left;
-        }
-
-        .results-table th {
-            font-weight: 600;
-            border-bottom: 2px solid #e5e7eb;
-        }
-
-        .results-table tr:nth-child(even) {
-            background-color: #f9fafb;
-        }
-
-        .no-wrap {
-            white-space: nowrap;
-        }
-
-        #searchResults {
-            overflow-x: auto;
-        }
-
-        .settings-btn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            padding: 0.5rem;
-            border-radius: 50%;
-            background-color: #e5e7eb;
-            transition: background-color 0.2s;
-        }
-
-        .settings-btn:hover {
-            background-color: #d1d5db;
-        }
-
-        .settings-dropdown {
-            position: absolute;
-            top: 4rem;
-            right: 1rem;
-            width: 250px;
-            background-color: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
-            z-index: 10;
-        }
-
-        .footer {
-            margin-top: 2rem;
-            font-size: 0.75rem;
-            color: #6b7280;
-            text-align: center;
-        }
-
-        /* ===== FIX CRÍTICO =====
-           Los modales NO deben forzar display:flex por CSS,
-           porque pisa la clase `hidden` y quedan siempre visibles. */
-        #barcodeModal,
-        #scannerModal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: none; /* <-- arranca oculto */
-            justify-content: center;
-            align-items: center;
-            z-index: 50;
-        }
-
-        #barcodeModalContent,
-        #scannerModalContent {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
-            text-align: center;
-            max-width: 90%;
-            position: relative;
-        }
-
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-
-            #barcodeModalContent,
-            #barcodeModalContent * {
-                visibility: visible;
-            }
-
-            #barcodeModalContent {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; }
+        .container { max-width: 900px; padding: 2rem; }
+        .input-group label { font-weight: 500; }
+        .input-group input, .input-group textarea { padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.5rem; width: 100%; transition: all 0.2s; }
+        .input-group input:focus, .input-group textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); }
+        .radio-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; user-select: none; }
+        .radio-label input[type="radio"] { accent-color: #3b82f6; }
+        .btn { padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; transition: background-color 0.2s; }
+        .btn-disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary { background-color: #3b82f6; color: white; }
+        .btn-primary:hover:not(.btn-disabled) { background-color: #2563eb; }
+        .btn-secondary { background-color: #e5e7eb; color: #1f2937; }
+        .btn-secondary:hover:not(.btn-disabled) { background-color: #d1d5db; }
+        .message-box { padding: 1rem; border-radius: 0.5rem; margin-top: 1rem; font-weight: 500; display: none; }
+        .message-success { background-color: #dcfce7; color: #166534; }
+        .message-error { background-color: #fee2e2; color: #991b1b; }
+        .results-table th, .results-table td { padding: 0.75rem; text-align: left; }
+        .results-table th { font-weight: 600; border-bottom: 2px solid #e5e7eb; }
+        .results-table tr:nth-child(even) { background-color: #f9fafb; }
+        .footer { margin-top: 2rem; font-size: 0.75rem; color: #6b7280; text-align: center; }
+        /* Modales arrancan ocultos */
+        #barcodeModal, #scannerModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 50; }
+        #barcodeModalContent, #scannerModalContent { background-color: white; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; max-width: 90%; position: relative; }
+        @media print { body * { visibility: hidden; } #barcodeModalContent, #barcodeModalContent * { visibility: visible; } #barcodeModalContent { position: absolute; left: 0; top: 0; width: 100%; } }
     </style>
 </head>
 
 <body class="bg-gray-100 flex flex-col items-center min-h-screen p-4">
 
-    <!-- ==================== LOGIN ==================== -->
+    <!-- LOGIN -->
     <div id="login-section" class="flex flex-col items-center justify-center min-h-screen w-full p-4">
         <div class="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full">
             <h2 class="text-2xl font-bold text-center text-blue-800 mb-6">Iniciar Sesión</h2>
             <form id="loginForm" class="flex flex-col gap-4">
                 <div class="input-group">
                     <label for="email">Correo Electrónico</label>
-                    <input type="email" id="email" class="mt-1" placeholder="tu@email.com" required />
+                    <input type="email" id="email" class="mt-1" required />
                 </div>
                 <div class="input-group">
                     <label for="password">Contraseña</label>
-                    <input type="password" id="password" class="mt-1" placeholder="********" required />
+                    <input type="password" id="password" class="mt-1" required />
                 </div>
                 <button type="submit" class="btn btn-primary w-full">Ingresar</button>
             </form>
         </div>
     </div>
 
-    <!-- ==================== APP PRINCIPAL ==================== -->
+    <!-- APP -->
     <div id="main-app-wrapper" class="container bg-white rounded-xl shadow-lg flex flex-col relative p-8 gap-8 mt-6 hidden">
-
-        <button id="settingsBtn" class="settings-btn" style="display: none;">
-            <svg class="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path fill-rule="evenodd"
-                    d="M11.49 4.34a.75.75 0 011.02 1.02l-1.02 1.02a.75.75 0 01-1.02-1.02l1.02-1.02zm-3.06 1.02a.75.75 0 011.02-1.02l1.02 1.02a.75.75 0 01-1.02 1.02l-1.02-1.02zm-.625 2.5a.75.75 0 01-.132.887l-1.875 1.625a.75.75 0 01-.887-.132l-1.5-1.5a.75.75 0 01.132-.887l1.875-1.625a.75.75 0 01.887.132l1.5 1.5a.75.75 0 01-.132.887zm1.125 1.5a.75.75 0 01-.75-.75h3.75a.75.75 0 010 1.5H8.75a.75.75 0 01-.75-.75zm6.5 2.25a.75.75 0 01-.132.887l-1.875 1.625a.75.75 0 01-.887-.132l-1.5-1.5a.75.75 0 01-.132-.887l1.875-1.625a.75.75 0 01.887.132l1.5 1.5a.75.75 0 01-.132.887zM8.75 13.5a.75.75 0 01-.75-.75V8.5a.75.75 0 011.5 0v4.25a.75.75 0 01-.75.75z"
-                    clip-rule="evenodd" />
-            </svg>
-        </button>
-
-        <div id="settingsPanel" class="settings-dropdown p-4 hidden">
-            <h3 class="font-bold mb-2">Configuración</h3>
-            <div id="update-name-container" class="w-full">
-                <p class="text-sm text-gray-600 mb-2">
-                    Tu nombre actual es: <span id="current-username" class="font-semibold"></span>
-                </p>
-                <div class="input-group mb-4">
-                    <label for="newUsername">Asignar nuevo nombre</label>
-                    <input type="text" id="newUsername" class="w-full mt-1" placeholder="Ej: 12345 Apellido">
-                </div>
-                <button id="updateNameBtn" class="btn btn-secondary w-full mb-4">Actualizar nombre</button>
-            </div>
-            <button id="logoutBtn" class="btn btn-secondary w-full">Cerrar Sesión</button>
-        </div>
-
         <h1 class="text-3xl font-bold text-center text-blue-800">Control de Expedientes</h1>
 
-        <!-- ========== FORM CARGA ========== -->
+        <!-- Formulario -->
         <form id="expedienteForm" class="flex flex-col gap-6">
-            <h2 class="text-xl font-bold text-gray-700">Cargar nuevo expediente</h2>
-
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="input-group">
-                    <label for="codigo">Código</label>
-                    <input type="number" id="codigo" class="mt-1" placeholder="Ej: 4078" required />
-                </div>
-                <div class="input-group">
-                    <label for="numero">Número</label>
-                    <input type="number" id="numero" class="mt-1" placeholder="Ej: 255255" required />
-                </div>
-                <div class="input-group">
-                    <label for="letra">Letra</label>
-                    <input type="text" id="letra" class="mt-1 uppercase" maxlength="1" placeholder="Ej: I" required />
-                </div>
-                <div class="input-group">
-                    <label for="anio">Año</label>
-                    <input type="number" id="anio" class="mt-1" placeholder="Ej: 2025" required />
-                </div>
+                <div class="input-group"><label for="codigo">Código</label><input type="number" id="codigo" required /></div>
+                <div class="input-group"><label for="numero">Número</label><input type="number" id="numero" required /></div>
+                <div class="input-group"><label for="letra">Letra</label><input type="text" id="letra" maxlength="1" required /></div>
+                <div class="input-group"><label for="anio">Año</label><input type="number" id="anio" required /></div>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="input-group">
-                    <label for="ubicacion">Ubicación</label>
-                    <input type="text" id="ubicacion" class="mt-1" placeholder="Ej: Mesa de Entradas" required />
-                </div>
-                <div class="input-group">
-                    <label for="estado">Estado</label>
-                    <input type="text" id="estado" class="mt-1" placeholder="Ej: En trámite" required />
-                </div>
+                <div class="input-group"><label for="ubicacion">Ubicación</label><input type="text" id="ubicacion" required /></div>
+                <div class="input-group"><label for="estado">Estado</label><input type="text" id="estado" required /></div>
             </div>
-
-            <div class="flex items-center gap-2">
-                <button type="button" id="showNomenclaturaBtn" class="btn btn-secondary w-max">
-                    Mostrar Nomenclatura
-                </button>
-            </div>
-            <div id="nomenclaturaFields" class="grid grid-cols-1 md:grid-cols-3 gap-4 hidden">
-                <div class="input-group">
-                    <label for="circunscripcion">Circunscripción</label>
-                    <input type="number" id="circunscripcion" class="mt-1" placeholder="Ej: 4078" />
-                </div>
-                <div class="input-group">
-                    <label for="seccion">Sección</label>
-                    <input type="text" id="seccion" class="mt-1" placeholder="Ej: B" />
-                </div>
-                <div class="input-group">
-                    <label for="chacra">Chacra</label>
-                    <input type="text" id="chacra" class="mt-1" placeholder="Ej: B" />
-                </div>
-                <div class="input-group">
-                    <label for="quinta">Quinta</label>
-                    <input type="text" id="quinta" class="mt-1" placeholder="Ej: B" />
-                </div>
-                <div class="input-group">
-                    <label for="fraccion">Fracción</label>
-                    <input type="text" id="fraccion" class="mt-1" placeholder="Ej: B" />
-                </div>
-                <div class="input-group">
-                    <label for="manzana">Manzana</label>
-                    <input type="text" id="manzana" class="mt-1" placeholder="Ej: B" />
-                </div>
-                <div class="input-group">
-                    <label for="parcela">Parcela</label>
-                    <input type="text" id="parcela" class="mt-1" placeholder="Ej: B" />
-                </div>
-                <div class="input-group">
-                    <label for="subparcela">Sub-Parcela</label>
-                    <input type="text" id="subparcela" class="mt-1" placeholder="Ej: B" />
-                </div>
-                <div class="input-group">
-                    <label for="subsuelo">Subsuelo</label>
-                    <input type="text" id="subsuelo" class="mt-1" placeholder="Ej: 1" />
-                </div>
-                <div class="input-group">
-                    <label for="partidaProvincial">Partida Provincial</label>
-                    <input type="number" id="partidaProvincial" class="mt-1" placeholder="Ej: 123456" />
-                </div>
-                <div class="input-group">
-                    <label for="partidaMunicipal">Partida Municipal</label>
-                    <input type="number" id="partidaMunicipal" class="mt-1" placeholder="Ej: 654321" />
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="input-group">
-                    <label for="observaciones">Observaciones</label>
-                    <textarea id="observaciones" class="mt-1" placeholder="Observaciones sobre el expediente..."></textarea>
-                </div>
-                <div class="input-group">
-                    <label>Tipo de Movimiento</label>
-                    <div class="flex flex-col gap-2 mt-1">
-                        <label class="radio-label">
-                            <input type="radio" name="tipoMovimiento" value="ingreso" checked />
-                            Ingreso
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="tipoMovimiento" value="egreso" />
-                            Egreso
-                        </label>
-                    </div>
-                </div>
-            </div>
-
             <div class="flex flex-col sm:flex-row gap-4">
                 <button type="submit" id="saveBtn" class="btn btn-primary w-full">Guardar</button>
             </div>
             <div class="flex flex-col sm:flex-row gap-4">
                 <button type="button" id="generateBarcodeBtn" class="btn btn-primary w-full">Generar Código</button>
             </div>
-
             <div id="saveMessage" class="message-box message-success"></div>
         </form>
 
-        <hr class="border-gray-300" />
-
-        <!-- ========== BUSCAR ========== -->
-        <div class="flex flex-col gap-6">
-            <h2 class="text-xl font-bold text-gray-700">Buscar expediente</h2>
-
-            <div class="flex items-center gap-2">
-                <button type="button" id="showAdvancedSearchBtn" class="btn btn-secondary w-max">
-                    Búsqueda Avanzada
-                </button>
-            </div>
-            <div id="advancedSearchFields" class="grid grid-cols-1 md:grid-cols-4 gap-4 hidden">
-                <div class="input-group">
-                    <label for="searchCodigo">Código</label>
-                    <input type="number" id="searchCodigo" class="mt-1" placeholder="Código" />
-                </div>
-                <div class="input-group">
-                    <label for="searchNumero">Número</label>
-                    <input type="number" id="searchNumero" class="mt-1" placeholder="Número" />
-                </div>
-                <div class="input-group">
-                    <label for="searchLetra">Letra</label>
-                    <input type="text" id="searchLetra" class="mt-1 uppercase" placeholder="Letra" />
-                </div>
-                <div class="input-group">
-                    <label for="searchAnio">Año</label>
-                    <input type="number" id="searchAnio" class="mt-1" placeholder="Año" />
-                </div>
-                <div class="input-group">
-                    <label for="searchUbicacion">Ubicacion</label>
-                    <input type="text" id="searchUbicacion" class="mt-1" placeholder="Ubicacion" />
-                </div>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-4">
-                <button type="button" id="searchBtn" class="btn btn-primary w-full">Buscar</button>
-                <button type="button" id="clearBtn" class="btn btn-secondary w-full">Limpiar Búsqueda</button>
-                <button type="button" id="scanBarcodeBtn" class="btn btn-primary w-full">Escanear Código</button>
-            </div>
-
-            <div id="searchResults" class="rounded-lg shadow overflow-hidden">
-                <table class="w-full results-table bg-white">
-                    <thead>
-                        <tr>
-                            <th class="no-wrap">Expediente</th>
-                            <th>Ubicación</th>
-                            <th>Estado</th>
-                            <th>Movimiento</th>
-                            <th class="no-wrap">Fecha</th>
-                            <th>Usuario</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resultsBody">
-                    </tbody>
-                </table>
-            </div>
-
-            <div id="searchMessage" class="message-box message-error hidden"></div>
+        <!-- Buscar -->
+        <h2 class="text-xl font-bold text-gray-700">Buscar expediente</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+            <button type="button" id="searchBtn" class="btn btn-primary w-full">Buscar</button>
+            <button type="button" id="clearBtn" class="btn btn-secondary w-full">Limpiar</button>
+            <button type="button" id="scanBarcodeBtn" class="btn btn-primary w-full">Escanear Código</button>
         </div>
+        <div id="searchResults" class="rounded-lg shadow overflow-hidden">
+            <table class="w-full results-table bg-white">
+                <thead><tr><th>Expediente</th><th>Ubicación</th><th>Estado</th><th>Fecha</th><th>Usuario</th></tr></thead>
+                <tbody id="resultsBody"></tbody>
+            </table>
+        </div>
+        <div id="searchMessage" class="message-box message-error hidden"></div>
 
-        <footer class="footer">
-            <p>&copy; 2025. Todos los derechos reservados.</p>
-        </footer>
-
+        <footer class="footer"><p>&copy; 2025. Todos los derechos reservados.</p></footer>
     </div>
 
-    <!-- ==================== MODAL CÓDIGO DE BARRAS ==================== -->
+    <!-- Modal código -->
     <div id="barcodeModal" class="hidden">
         <div id="barcodeModalContent" class="flex flex-col items-center gap-4">
             <h3 class="text-lg font-bold">Código de Barras</h3>
@@ -454,7 +116,7 @@
         </div>
     </div>
 
-    <!-- ==================== MODAL ESCÁNER ==================== -->
+    <!-- Modal escáner -->
     <div id="scannerModal" class="hidden">
         <div id="scannerModalContent" class="flex flex-col items-center gap-4">
             <h3 class="text-lg font-bold">Escanear Código de Barras</h3>
@@ -464,438 +126,60 @@
         </div>
     </div>
 
-    <!-- ==================== SCRIPT ==================== -->
     <script type="module">
-        // Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+        // 🔑 Tu configuración real de Firebase
         const firebaseConfig = {
-            apiKey: "TU_API_KEY",
-            authDomain: "TU_AUTH_DOMAIN",
-            projectId: "TU_PROJECT_ID",
-            storageBucket: "TU_STORAGE_BUCKET",
-            messagingSenderId: "TU_MESSAGING_SENDER_ID",
-            appId: "TU_APP_ID"
+            apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
+            authDomain: "exptcoord.firebaseapp.com",
+            projectId: "exptcoord",
+            storageBucket: "exptcoord.firebasestorage.app",
+            messagingSenderId: "416639039117",
+            appId: "1:416639039117:web:d9422f6d853a760a3014c4",
+            measurementId: "G-94PRRLFZV4"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // DOM refs
-        const loginSection = document.getElementById('login-section');
-        const mainAppWrapper = document.getElementById('main-app-wrapper');
-        const loginForm = document.getElementById('loginForm');
-        const saveMessage = document.getElementById('saveMessage');
-        const searchMessage = document.getElementById('searchMessage');
-        const expedienteForm = document.getElementById('expedienteForm');
-        const resultsBody = document.getElementById('resultsBody');
-        const showNomenclaturaBtn = document.getElementById('showNomenclaturaBtn');
-        const nomenclaturaFields = document.getElementById('nomenclaturaFields');
-        const showAdvancedSearchBtn = document.getElementById('showAdvancedSearchBtn');
-        const advancedSearchFields = document.getElementById('advancedSearchFields');
-        const settingsBtn = document.getElementById('settingsBtn');
-        const settingsPanel = document.getElementById('settingsPanel');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const newUsernameInput = document.getElementById('newUsername');
-        const updateNameBtn = document.getElementById('updateNameBtn');
-        const currentUsernameSpan = document.getElementById('current-username');
+        const loginSection=document.getElementById('login-section'), mainAppWrapper=document.getElementById('main-app-wrapper'), loginForm=document.getElementById('loginForm');
+        const resultsBody=document.getElementById('resultsBody'), searchMessage=document.getElementById('searchMessage');
 
-        // Barcode refs
-        const generateBarcodeBtn = document.getElementById('generateBarcodeBtn');
-        const barcodeModal = document.getElementById('barcodeModal');
-        const barcodeSvg = document.getElementById('barcodeSvg');
-        const barcodeDataText = document.getElementById('barcodeDataText');
-        const printBarcodeBtn = document.getElementById('printBarcodeBtn');
-        const closeBarcodeModalBtn = document.getElementById('closeBarcodeModalBtn');
+        // Login
+        loginForm.addEventListener('submit',async(e)=>{ e.preventDefault(); try{ await signInWithEmailAndPassword(auth, loginForm.email.value, loginForm.password.value);}catch(err){alert(`Error al iniciar sesión: ${err.message}`);} });
+        onAuthStateChanged(auth,(user)=>{ if(user){ loginSection.classList.add('hidden'); mainAppWrapper.classList.remove('hidden'); } else { loginSection.classList.remove('hidden'); mainAppWrapper.classList.add('hidden'); } });
 
-        // Scanner refs
-        const scanBarcodeBtn = document.getElementById('scanBarcodeBtn');
-        const scannerModal = document.getElementById('scannerModal');
-        const readerDiv = document.getElementById('reader');
-        const scannerMessage = document.getElementById('scannerMessage');
-        const closeScannerModalBtn = document.getElementById('closeScannerModalBtn');
-
-        let html5QrCode = null;
-
-        // User state
-        let currentUserId = null;
-        let currentUserName = '';
-
-        // ====== AUTH FLOW (login primero, app después) ======
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUserId = user.uid;
-                const userDocRef = doc(db, 'users', currentUserId);
-                const userDoc = await getDoc(userDocRef);
-                if (userDoc.exists()) {
-                    currentUserName = userDoc.data().name || user.email;
-                } else {
-                    currentUserName = user.email;
-                    await setDoc(userDocRef, { name: user.email }, { merge: true });
-                }
-                currentUsernameSpan.textContent = currentUserName;
-                loginSection.classList.add('hidden');
-                mainAppWrapper.classList.remove('hidden');
-                settingsBtn.style.display = 'block';
-                // Asegura que modales NO estén visibles al entrar
-                barcodeModal.style.display = 'none';
-                scannerModal.style.display = 'none';
-            } else {
-                loginSection.classList.remove('hidden');
-                mainAppWrapper.classList.add('hidden');
-                settingsBtn.style.display = 'none';
-                settingsPanel.classList.add('hidden');
-                // Bloquea modales si estás deslogueado
-                barcodeModal.style.display = 'none';
-                scannerModal.style.display = 'none';
-            }
-        });
-
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-                await signInWithEmailAndPassword(auth, loginForm.email.value, loginForm.password.value);
-            } catch (error) {
-                alert(`Error al iniciar sesión: ${error.message}`);
-            }
-        });
-
-        // ====== Guardar expediente ======
-        expedienteForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const saveBtn = document.getElementById('saveBtn');
-            saveBtn.disabled = true;
-            saveBtn.classList.add('btn-disabled');
-
-            const codigo = document.getElementById('codigo').value;
-            const numero = document.getElementById('numero').value;
-            const letra = document.getElementById('letra').value.toUpperCase();
-            const anio = document.getElementById('anio').value;
-            const ubicacion = document.getElementById('ubicacion').value;
-            const estado = document.getElementById('estado').value;
-            const observaciones = document.getElementById('observaciones').value;
-            const tipoMovimiento = document.querySelector('input[name="tipoMovimiento"]:checked').value;
-            const circunscripcion = document.getElementById('circunscripcion').value;
-            const seccion = document.getElementById('seccion').value;
-            const chacra = document.getElementById('chacra').value;
-            const quinta = document.getElementById('quinta').value;
-            const fraccion = document.getElementById('fraccion').value;
-            const manzana = document.getElementById('manzana').value;
-            const parcela = document.getElementById('parcela').value;
-            const subparcela = document.getElementById('subparcela').value;
-            const subsuelo = document.getElementById('subsuelo').value;
-            const partidaProvincial = document.getElementById('partidaProvincial').value;
-            const partidaMunicipal = document.getElementById('partidaMunicipal').value;
-
-            const existingExpedienteQuery = query(
-                collection(db, 'expedientes'),
-                where('codigo', '==', codigo),
-                where('numero', '==', numero),
-                where('letra', '==', letra),
-                where('anio', '==', anio)
-            );
-
-            try {
-                const querySnapshot = await getDocs(existingExpedienteQuery);
-                let barcodeValue = null;
-
-                if (!querySnapshot.empty) {
-                    const existingDoc = querySnapshot.docs[0];
-                    barcodeValue = existingDoc.data().barcode || null;
-                    await updateDoc(doc(db, 'expedientes', existingDoc.id), {
-                        ubicacion,
-                        estado,
-                        observaciones,
-                        circunscripcion: circunscripcion || null,
-                        seccion: seccion || null,
-                        chacra: chacra || null,
-                        quinta: quinta || null,
-                        fraccion: fraccion || null,
-                        manzana: manzana || null,
-                        parcela: parcela || null,
-                        subparcela: subparcela || null,
-                        subsuelo: subsuelo || null,
-                        partidaProvincial: partidaProvincial || null,
-                        partidaMunicipal: partidaMunicipal || null,
-                        fecha: new Date().toLocaleString(),
-                        oficina: "Mesa de Entradas, Moreno, Buenos Aires",
-                        tipo: tipoMovimiento,
-                        userId: currentUserId,
-                        userName: currentUserName
-                    });
-                    showMessage('Expediente actualizado con éxito.', 'success', saveMessage);
-                } else {
-                    barcodeValue = `${codigo}-${numero}-${letra}-${anio}`;
-                    const movimiento = {
-                        codigo,
-                        numero,
-                        letra,
-                        anio,
-                        ubicacion,
-                        estado,
-                        observaciones,
-                        circunscripcion: circunscripcion || null,
-                        seccion: seccion || null,
-                        chacra: chacra || null,
-                        quinta: quinta || null,
-                        fraccion: fraccion || null,
-                        manzana: manzana || null,
-                        parcela: parcela || null,
-                        subparcela: subparcela || null,
-                        subsuelo: subsuelo || null,
-                        partidaProvincial: partidaProvincial || null,
-                        partidaMunicipal: partidaMunicipal || null,
-                        fecha: new Date().toLocaleString(),
-                        oficina: "Mesa de Entradas, Moreno, Buenos Aires",
-                        tipo: tipoMovimiento,
-                        userId: currentUserId,
-                        userName: currentUserName,
-                        barcode: barcodeValue
-                    };
-                    await addDoc(collection(db, 'expedientes'), movimiento);
-                    showMessage('Expediente guardado con éxito.', 'success', saveMessage);
-                }
-
-                clearInputs();
-            } catch (e) {
-                console.error(e);
-                let msg = 'Error al guardar.';
-                if (e && e.code === 'permission-denied') {
-                    msg = 'Permiso denegado al escribir en "expedientes". Revisa reglas de Firestore.';
-                }
-                showMessage(msg + ' ' + (e.message || ''), 'error', saveMessage);
-            } finally {
-                saveBtn.disabled = false;
-                saveBtn.classList.remove('btn-disabled');
-            }
-        });
-
-        // ====== Búsqueda ======
-        async function filterAndRenderResults(barcodeScanned = null) {
-            resultsBody.innerHTML = '';
-            searchMessage.style.display = 'none';
-
-            let expedientesQuery = collection(db, 'expedientes');
-            let hasSearchCriteria = false;
-
-            if (barcodeScanned) {
-                expedientesQuery = query(expedientesQuery, where('barcode', '==', barcodeScanned));
-                hasSearchCriteria = true;
-            } else {
-                const searchCodigo = document.getElementById('searchCodigo')?.value || '';
-                const searchNumero = document.getElementById('searchNumero')?.value || '';
-                const searchLetra = (document.getElementById('searchLetra')?.value || '').toUpperCase();
-                const searchAnio = document.getElementById('searchAnio')?.value || '';
-                const searchUbicacion = document.getElementById('searchUbicacion')?.value || '';
-
-                if (searchCodigo) { expedientesQuery = query(expedientesQuery, where('codigo', '==', searchCodigo)); hasSearchCriteria = true; }
-                if (searchNumero) { expedientesQuery = query(expedientesQuery, where('numero', '==', searchNumero)); hasSearchCriteria = true; }
-                if (searchLetra) { expedientesQuery = query(expedientesQuery, where('letra', '==', searchLetra)); hasSearchCriteria = true; }
-                if (searchAnio) { expedientesQuery = query(expedientesQuery, where('anio', '==', searchAnio)); hasSearchCriteria = true; }
-                if (searchUbicacion) { expedientesQuery = query(expedientesQuery, where('ubicacion', '==', searchUbicacion)); hasSearchCriteria = true; }
-            }
-
-            if (!hasSearchCriteria) {
-                showMessage('Ingresa al menos un criterio de búsqueda o escanea un código.', 'error', searchMessage);
-                return;
-            }
-
-            try {
-                const querySnapshot = await getDocs(expedientesQuery);
-                if (querySnapshot.empty) {
-                    showMessage('No se encontraron expedientes con esos criterios.', 'error', searchMessage);
-                    return;
-                }
-
-                let html = '';
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    html += `
-                        <tr>
-                            <td class="no-wrap">${data.codigo}-${data.numero}-${data.letra}-${data.anio}</td>
-                            <td>${data.ubicacion || 'N/A'}</td>
-                            <td>${data.estado || 'N/A'}</td>
-                            <td>${data.tipo || 'N/A'}</td>
-                            <td class="no-wrap">${data.fecha || 'N/A'}</td>
-                            <td>${data.userName || 'Anónimo'}</td>
-                        </tr>
-                    `;
-                });
-                resultsBody.innerHTML = html;
-            } catch (e) {
-                console.error("Error al buscar documentos: ", e);
-                showMessage('Error al buscar expedientes.', 'error', searchMessage);
-            }
+        // Buscar
+        async function filterAndRenderResults(barcodeScanned=null){
+            resultsBody.innerHTML=''; searchMessage.style.display='none';
+            let expedientesQuery=collection(db,'expedientes');
+            if(barcodeScanned){ expedientesQuery=query(expedientesQuery,where('barcode','==',barcodeScanned)); }
+            try{ const qs=await getDocs(expedientesQuery); if(qs.empty){ searchMessage.style.display='block'; searchMessage.textContent='No se encontraron expedientes.'; return;}
+                qs.forEach((doc)=>{const d=doc.data(); resultsBody.innerHTML+=`<tr><td>${d.codigo}-${d.numero}-${d.letra}-${d.anio}</td><td>${d.ubicacion||''}</td><td>${d.estado||''}</td><td>${d.fecha||''}</td><td>${d.userName||''}</td></tr>`;});
+            }catch(err){ console.error(err);}
         }
 
-        // ====== Utilitarios ======
-        function showMessage(msg, type, element) {
-            element.textContent = msg;
-            element.className = `message-box ${type === 'success' ? 'message-success' : 'message-error'}`;
-            element.style.display = 'block';
-            setTimeout(() => {
-                element.style.display = 'none';
-            }, 5000);
-        }
+        // ==== Modales ====
+        const barcodeModal=document.getElementById('barcodeModal'), closeBarcodeModalBtn=document.getElementById('closeBarcodeModalBtn');
+        const generateBarcodeBtn=document.getElementById('generateBarcodeBtn'), barcodeSvg=document.getElementById('barcodeSvg'), barcodeDataText=document.getElementById('barcodeDataText');
+        generateBarcodeBtn.addEventListener('click',()=>{ let codigo=document.getElementById('codigo').value, numero=document.getElementById('numero').value, letra=document.getElementById('letra').value.toUpperCase(), anio=document.getElementById('anio').value;
+            if(!codigo||!numero||!letra||!anio){ alert("Completa Código, Número, Letra y Año"); return;}
+            let val=`${codigo}-${numero}-${letra}-${anio}`; JsBarcode(barcodeSvg,val,{format:"CODE128"}); barcodeDataText.textContent=val; barcodeModal.style.display="flex"; });
+        closeBarcodeModalBtn.addEventListener('click',()=>{ barcodeModal.style.display="none"; });
 
-        function clearInputs() {
-            expedienteForm.reset();
-            document.querySelector('input[name="tipoMovimiento"][value="ingreso"]').checked = true;
-        }
+        const scanBarcodeBtn=document.getElementById('scanBarcodeBtn'), scannerModal=document.getElementById('scannerModal'), closeScannerModalBtn=document.getElementById('closeScannerModalBtn'), scannerMessage=document.getElementById('scannerMessage');
+        let html5QrCode=null;
+        scanBarcodeBtn.addEventListener('click',()=>{ scannerModal.style.display="flex"; if(!html5QrCode){ html5QrCode=new Html5Qrcode("reader"); }
+            html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:250},(decodedText)=>{ scannerMessage.textContent=`Detectado: ${decodedText}`; filterAndRenderResults(decodedText); closeScanner(); }); });
+        function closeScanner(){ if(html5QrCode){ html5QrCode.stop().then(()=>{ scannerModal.style.display="none"; scannerMessage.textContent=""; }); } else { scannerModal.style.display="none"; } }
+        closeScannerModalBtn.addEventListener('click',closeScanner);
 
-        function clearSearchResults() {
-            resultsBody.innerHTML = '';
-            searchMessage.style.display = 'none';
-            const ids = ['searchCodigo','searchNumero','searchLetra','searchAnio','searchUbicacion'];
-            ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-        }
-
-        // ====== Configuración ======
-        settingsBtn.addEventListener('click', () => {
-            settingsPanel.classList.toggle('hidden');
-        });
-
-        logoutBtn.addEventListener('click', async () => {
-            try { await signOut(auth); } catch (error) { console.error("Error al cerrar sesión:", error); }
-        });
-
-        updateNameBtn.addEventListener('click', async () => {
-            const newName = newUsernameInput.value.trim();
-            if (newName && currentUserId) {
-                try {
-                    await updateDoc(doc(db, 'users', currentUserId), { name: newName });
-                    currentUserName = newName;
-                    currentUsernameSpan.textContent = currentUserName;
-                    newUsernameInput.value = '';
-                    alert('Nombre de usuario actualizado con éxito.');
-                } catch (e) {
-                    console.error("Error al actualizar el nombre:", e);
-                    alert('Error al actualizar el nombre. Revisa las reglas de Firestore.');
-                }
-            }
-        });
-
-        // ====== Código de barras (Generar/Imprimir) ======
-        generateBarcodeBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-
-            const codigo = document.getElementById('codigo').value;
-            const numero = document.getElementById('numero').value;
-            const letra = document.getElementById('letra').value.toUpperCase();
-            const anio = document.getElementById('anio').value;
-
-            if (!codigo || !numero || !letra || !anio) {
-                showMessage('Completá Código, Número, Letra y Año para generar el código de barras.', 'error', saveMessage);
-                return;
-            }
-
-            let barcodeData = `${codigo}-${numero}-${letra}-${anio}`;
-
-            const q = query(collection(db, 'expedientes'),
-                where('codigo', '==', codigo),
-                where('numero', '==', numero),
-                where('letra', '==', letra),
-                where('anio', '==', anio)
-            );
-
-            try {
-                const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
-                    const expedienteDocRef = querySnapshot.docs[0].ref;
-                    const barcodeFromDb = querySnapshot.docs[0].data().barcode;
-                    if (barcodeFromDb) {
-                        barcodeData = barcodeFromDb;
-                    } else {
-                        await updateDoc(expedienteDocRef, { barcode: barcodeData });
-                    }
-                }
-
-                // Mostrar modal correctamente (sin pelearse con Tailwind)
-                barcodeModal.style.display = 'flex';
-
-                JsBarcode("#barcodeSvg", barcodeData, {
-                    format: "CODE128",
-                    displayValue: true,
-                    width: 2,
-                    height: 100,
-                    fontSize: 18
-                });
-                barcodeDataText.textContent = barcodeData;
-
-            } catch (e) {
-                console.error("Error al generar el código de barras:", e);
-                showMessage('Error al generar el código de barras.', 'error', saveMessage);
-            }
-        });
-
-        closeBarcodeModalBtn.addEventListener('click', () => {
-            barcodeModal.style.display = 'none';
-        });
-
-        printBarcodeBtn.addEventListener('click', () => {
-            window.print();
-        });
-
-        // ====== Escáner ======
-        scanBarcodeBtn.addEventListener('click', async () => {
-            // abrir modal
-            scannerModal.style.display = 'flex';
-            scannerMessage.textContent = 'Iniciando escáner...';
-
-            // detener instancia previa si quedó corriendo
-            if (html5QrCode) {
-                try { await html5QrCode.stop(); } catch (_) {}
-            }
-
-            html5QrCode = new Html5Qrcode("reader");
-
-            const qrCodeSuccessCallback = async (decodedText) => {
-                scannerMessage.textContent = `Código escaneado: ${decodedText}`;
-                try { await html5QrCode.stop(); } catch (_) {}
-                scannerModal.style.display = 'none';
-                clearSearchResults();
-                filterAndRenderResults(decodedText);
-            };
-
-            const qrCodeErrorCallback = () => {
-                // silencioso: se llama muchas veces por segundo
-            };
-
-            const config = { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true };
-
-            try {
-                await html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback, qrCodeErrorCallback);
-                scannerMessage.textContent = 'Escaneando...';
-            } catch (err) {
-                scannerMessage.textContent = `Error al iniciar la cámara: ${err}. Verificá permisos del navegador.`;
-                console.error("Error al iniciar la cámara:", err);
-            }
-        });
-
-        closeScannerModalBtn.addEventListener('click', async () => {
-            if (html5QrCode) {
-                try { await html5QrCode.stop(); } catch (err) { console.error("Error al detener el escáner:", err); }
-            }
-            scannerModal.style.display = 'none';
-        });
-
-        // ====== Búsqueda & Limpiar ======
-        document.getElementById('searchBtn').addEventListener('click', () => filterAndRenderResults(null));
-        document.getElementById('clearBtn').addEventListener('click', clearSearchResults);
-
-        // ====== Toggles UI ======
-        showNomenclaturaBtn.addEventListener('click', () => {
-            nomenclaturaFields.classList.toggle('hidden');
-        });
-
-        showAdvancedSearchBtn.addEventListener('click', () => {
-            advancedSearchFields.classList.toggle('hidden');
-        });
+        // ==== Cerrar modales con ESC ====
+        document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ barcodeModal.style.display="none"; closeScanner(); }});
     </script>
 </body>
-
 </html>
