@@ -1,171 +1,241 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="h-full">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Control de Expedientes</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Expedientes · Carga & Búsqueda</title>
+  <!-- Tailwind (dev) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body{font-family:'Inter',sans-serif;background:#f3f4f6;color:#1f2937}
-    .tab-active{background:#3b82f6;color:white}
-    .tab-inactive{background:#e5e7eb;color:#1f2937}
-    #barcodeModal,#scannerModal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;justify-content:center;align-items:center;z-index:60}
-    #barcodeModalContent,#scannerModalContent{background:#fff;padding:1.5rem;border-radius:.5rem;max-width:90%;width:420px;text-align:center}
-    #reader{width:320px;height:320px}
+    /* Scrollbar sutil */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 8px; }
+    .fade-in { animation: fade .18s ease-out; }
+    @keyframes fade { from { opacity: 0; transform: scale(.98) } to { opacity: 1; transform: scale(1) } }
+    /* Overlay guía para escaneo */
+    .scan-overlay::after {
+      content: "";
+      position: absolute;
+      inset: 15%;
+      border: 2px dashed rgba(255,255,255,.8);
+      border-radius: .75rem;
+      pointer-events: none;
+    }
   </style>
+
+  <!-- JsBarcode (Code128) -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <!-- jsPDF (PDF en mm) -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
-<body class="flex items-start justify-center min-h-screen p-4">
-
-  <!-- LOGIN -->
-  <div id="login-section" class="flex flex-col items-center justify-center min-h-screen w-full p-4">
-    <div class="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full">
-      <h2 class="text-2xl font-bold text-center text-blue-800 mb-6">Iniciar Sesión</h2>
-      <form id="loginForm" class="flex flex-col gap-4">
-        <div>
-          <label for="email">Correo Electrónico</label>
-          <input id="email" type="email" required class="w-full border rounded p-2"/>
-        </div>
-        <div>
-          <label for="password">Contraseña</label>
-          <input id="password" type="password" required class="w-full border rounded p-2"/>
-        </div>
-        <button class="bg-blue-600 text-white py-2 rounded" type="submit">Ingresar</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- APP -->
-  <div id="main-app-wrapper" class="container bg-white rounded-xl shadow-lg flex flex-col relative p-8 gap-8 mt-6 hidden">
-    <h1 class="text-3xl font-bold text-center text-blue-800">Control de Expedientes</h1>
+<body class="h-full bg-gray-50 text-gray-900">
+  <div class="max-w-6xl mx-auto p-4 sm:p-6">
+    <!-- Header -->
+    <header class="mb-4 sm:mb-6">
+      <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight">Gestión de Expedientes</h1>
+      <p class="text-sm text-gray-500">Cargar expedientes, generar etiquetas y buscar movimientos.</p>
+    </header>
 
     <!-- Tabs -->
-    <div class="flex gap-2 mb-4">
-      <button id="tabCarga" class="flex-1 py-2 rounded tab-active">CARGA</button>
-      <button id="tabBusqueda" class="flex-1 py-2 rounded tab-inactive">BÚSQUEDA</button>
+    <div class="flex items-center gap-2 mb-4">
+      <button id="tabBtnCarga" class="px-4 py-2 rounded-full border transition focus:outline-none
+             data-[active=true]:bg-blue-600 data-[active=true]:text-white data-[active=true]:border-blue-600
+             bg-white text-gray-700 border-gray-200 hover:border-blue-400"
+             data-active="true">CARGA</button>
+      <button id="tabBtnBusqueda" class="px-4 py-2 rounded-full border transition focus:outline-none
+             data-[active=true]:bg-blue-600 data-[active=true]:text-white data-[active=true]:border-blue-600
+             bg-white text-gray-700 border-gray-200 hover:border-blue-400"
+             data-active="false">BÚSQUEDA</button>
+
+      <div class="ml-auto">
+        <button id="btnConfig" class="px-3 py-2 text-sm rounded-md border bg-white hover:bg-gray-50">Configuración</button>
+      </div>
     </div>
 
-    <!-- CARGA -->
-    <section id="cargaSection">
-      <form id="expedienteForm" class="flex flex-col gap-6">
-        <h2 class="text-xl font-bold text-gray-700">Cargar Movimiento</h2>
-
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div><label>Código</label><input id="codigo" type="number" required class="w-full border rounded p-2"></div>
-          <div><label>Número</label><input id="numero" type="number" required class="w-full border rounded p-2"></div>
-          <div><label>Letra</label><input id="letra" maxlength="1" required class="w-full border rounded p-2 uppercase"></div>
-          <div><label>Año</label><input id="anio" type="number" required class="w-full border rounded p-2"></div>
-          <div><label>Extracto</label><input id="extracto" type="text" class="w-full border rounded p-2"></div>
+    <!-- Panels -->
+    <main class="space-y-8">
+      <!-- Panel CARGA -->
+      <section id="panelCarga" class="bg-white rounded-2xl shadow-sm border border-gray-200">
+        <div class="px-4 sm:px-6 py-4 border-b">
+          <h2 class="text-lg font-medium flex items-center gap-2">CARGA <span class="text-gray-400 text-sm">· Generar código de barras</span></h2>
         </div>
+        <div class="p-4 sm:p-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1" for="inCodigo">Código</label>
+              <input id="inCodigo" type="text" inputmode="numeric" placeholder="4078"
+                     class="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                     maxlength="4">
+              <p class="mt-1 text-xs text-gray-400">4 dígitos</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="inNumero">Número</label>
+              <input id="inNumero" type="text" inputmode="numeric" placeholder="111111"
+                     class="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                     maxlength="6">
+              <p class="mt-1 text-xs text-gray-400">6 dígitos</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="inLetra">Letra</label>
+              <input id="inLetra" type="text" placeholder="I"
+                     class="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                     maxlength="1">
+              <p class="mt-1 text-xs text-gray-400">1 letra (A–Z)</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="inAnio">Año</label>
+              <input id="inAnio" type="text" inputmode="numeric" placeholder="2025"
+                     class="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                     maxlength="4">
+              <p class="mt-1 text-xs text-gray-400">4 dígitos</p>
+            </div>
+          </div>
 
-        <!-- Nomenclatura -->
-        <h3 class="font-bold text-gray-600">Nomenclatura</h3>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div><label>Circunscripción</label><input id="circunscripcion" type="number" class="w-full border rounded p-2"></div>
-          <div><label>Sección</label><input id="seccion" type="text" class="w-full border rounded p-2"></div>
-          <div><label>Chacra</label><input id="chacra" type="text" class="w-full border rounded p-2"></div>
-          <div><label>L. CH.</label><input id="lch" type="text" class="w-full border rounded p-2"></div>
-          <div><label>Quinta</label><input id="quinta" type="text" class="w-full border rounded p-2"></div>
-          <div><label>L. Qt.</label><input id="lqt" type="text" class="w-full border rounded p-2"></div>
-          <div><label>Fracción</label><input id="fraccion" type="text" class="w-full border rounded p-2"></div>
-          <div><label>L. Fr.</label><input id="lfr" type="text" class="w-full border rounded p-2"></div>
-          <div><label>Manzana</label><input id="manzana" type="text" class="w-full border rounded p-2"></div>
-          <div><label>L. Mz.</label><input id="lmz" type="text" class="w-full border rounded p-2"></div>
-          <div><label>Parcela</label><input id="parcela" type="text" class="w-full border rounded p-2"></div>
-          <div><label>L. Pc.</label><input id="lpc" type="text" class="w-full border rounded p-2"></div>
-          <div><label>Partida Provincial</label><input id="partidaProv" type="number" class="w-full border rounded p-2"></div>
-          <div><label>Partida Municipal</label><input id="partidaMun" type="number" class="w-full border rounded p-2"></div>
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <button id="btnGenerar"
+                    class="px-4 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition"
+                    disabled>Generar código</button>
+            <span id="msgCarga" class="text-sm"></span>
+          </div>
         </div>
+      </section>
 
-        <div><label>Oficina</label><input id="oficinaInput" type="text" required class="w-full border rounded p-2"></div>
-        <div class="flex gap-4">
-          <label><input type="radio" name="movimientoTipo" value="enviamos" required> Enviamos</label>
-          <label><input type="radio" name="movimientoTipo" value="recibimos" required> Recibimos</label>
+      <!-- Panel BÚSQUEDA -->
+      <section id="panelBusqueda" class="bg-white rounded-2xl shadow-sm border border-gray-200 hidden">
+        <div class="px-4 sm:px-6 py-4 border-b">
+          <h2 class="text-lg font-medium flex items-center gap-2">BÚSQUEDA <span class="text-gray-400 text-sm">· por ID o escaneo</span></h2>
         </div>
+        <div class="p-4 sm:p-6 space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1" for="bCodigo">Código</label>
+              <input id="bCodigo" type="text" inputmode="numeric" class="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500" maxlength="4">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="bNumero">Número</label>
+              <input id="bNumero" type="text" inputmode="numeric" class="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500" maxlength="6">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="bLetra">Letra</label>
+              <input id="bLetra" type="text" class="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500" maxlength="1">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="bAnio">Año</label>
+              <input id="bAnio" type="text" inputmode="numeric" class="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500" maxlength="4">
+            </div>
+            <div class="flex items-end gap-2">
+              <button id="btnBuscar" class="w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">Buscar</button>
+            </div>
+          </div>
 
-        <div class="flex gap-4">
-          <button id="saveBtn" type="submit" class="btn btn-primary">Cargar Expediente</button>
-          <button id="generateBarcodeBtn" type="button" class="btn btn-primary">Generar Código</button>
+          <div class="flex items-center gap-3">
+            <button id="btnEscanear" class="px-4 py-2 rounded-lg border bg-white hover:bg-gray-50">Escanear</button>
+            <input id="usbScanInput" type="text" class="sr-only" aria-hidden="true" />
+            <span class="text-xs text-gray-500">Tip: lector USB escribe aquí en segundo plano; presioná el gatillo y listo.</span>
+          </div>
+
+          <div id="resultados" class="mt-2">
+            <div class="border rounded-xl p-4 text-sm text-gray-500">Sin resultados aún.</div>
+          </div>
         </div>
-      </form>
-    </section>
-
-    <!-- BÚSQUEDA -->
-    <section id="busquedaSection" class="hidden">
-      <h2 class="text-xl font-bold text-gray-700">Buscar Expediente</h2>
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div><label>Código</label><input id="searchCodigo" type="number" class="w-full border rounded p-2"></div>
-        <div><label>Número</label><input id="searchNumero" type="number" class="w-full border rounded p-2"></div>
-        <div><label>Letra</label><input id="searchLetra" type="text" class="w-full border rounded p-2 uppercase"></div>
-        <div><label>Año</label><input id="searchAnio" type="number" class="w-full border rounded p-2"></div>
-        <div><label>Extracto</label><input id="searchExtracto" type="text" class="w-full border rounded p-2"></div>
-      </div>
-
-      <!-- Nomenclatura -->
-      <h3 class="font-bold text-gray-600 mt-4">Nomenclatura</h3>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div><label>Circunscripción</label><input id="searchCircunscripcion" type="number" class="w-full border rounded p-2"></div>
-        <div><label>Sección</label><input id="searchSeccion" type="text" class="w-full border rounded p-2"></div>
-        <div><label>Chacra</label><input id="searchChacra" type="text" class="w-full border rounded p-2"></div>
-        <div><label>L. CH.</label><input id="searchLch" type="text" class="w-full border rounded p-2"></div>
-        <div><label>Quinta</label><input id="searchQuinta" type="text" class="w-full border rounded p-2"></div>
-        <div><label>L. Qt.</label><input id="searchLqt" type="text" class="w-full border rounded p-2"></div>
-        <div><label>Fracción</label><input id="searchFraccion" type="text" class="w-full border rounded p-2"></div>
-        <div><label>L. Fr.</label><input id="searchLfr" type="text" class="w-full border rounded p-2"></div>
-        <div><label>Manzana</label><input id="searchManzana" type="text" class="w-full border rounded p-2"></div>
-        <div><label>L. Mz.</label><input id="searchLmz" type="text" class="w-full border rounded p-2"></div>
-        <div><label>Parcela</label><input id="searchParcela" type="text" class="w-full border rounded p-2"></div>
-        <div><label>L. Pc.</label><input id="searchLpc" type="text" class="w-full border rounded p-2"></div>
-        <div><label>Partida Provincial</label><input id="searchPartidaProv" type="number" class="w-full border rounded p-2"></div>
-        <div><label>Partida Municipal</label><input id="searchPartidaMun" type="number" class="w-full border rounded p-2"></div>
-      </div>
-
-      <div class="flex flex-col sm:flex-row gap-4 mt-4">
-        <button id="searchBtn" class="btn btn-primary w-full">Buscar</button>
-        <button id="clearBtn" class="btn btn-secondary w-full">Limpiar</button>
-        <button id="scanBarcodeBtn" class="btn btn-primary w-full">Escanear Código</button>
-      </div>
-
-      <div id="searchResults" class="rounded-lg shadow overflow-hidden mt-4">
-        <table class="w-full results-table bg-white">
-          <thead><tr><th>Expediente</th><th>Oficina</th><th>Movimiento</th><th>Fecha</th><th>Usuario</th></tr></thead>
-          <tbody id="resultsBody"></tbody>
-        </table>
-      </div>
-      <div id="searchMessage" class="message-box message-error hidden"></div>
-    </section>
-
+      </section>
+    </main>
   </div>
 
-  <!-- Modales -->
-  <div id="barcodeModal"><div id="barcodeModalContent">
-    <h3 class="text-lg font-bold">Código de Barras</h3>
-    <svg id="barcodeSvg" class="w-full h-auto"></svg>
-    <p id="barcodeDataText" class="text-sm text-gray-600"></p>
-    <div class="flex gap-4 justify-center mt-4">
-      <button id="printBarcodeBtn" class="btn btn-primary">Imprimir</button>
-      <button id="closeBarcodeModalBtn" class="btn btn-secondary">Cerrar</button>
+  <!-- Modal: Generador/Preview de Código -->
+  <div id="modalCodigo" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50"></div>
+    <div class="relative max-w-xl mx-auto mt-20 bg-white rounded-2xl shadow-lg fade-in">
+      <div class="px-5 py-4 border-b flex items-center justify-between">
+        <h3 class="text-lg font-medium">Etiqueta de expediente</h3>
+        <button class="text-gray-500 hover:text-gray-700" data-close-modal="modalCodigo" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div class="text-center">
+          <div id="legendText" class="text-xs text-gray-500 mb-1">Coordinación General de Programa de Tierras y Regularización Dominial</div>
+          <canvas id="barcodeCanvas" class="mx-auto"></canvas>
+          <div id="barcodeHuman" class="mt-1 font-medium tracking-wide"></div>
+        </div>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          <button id="btnCopiarId" class="px-3 py-2 rounded-md border bg-white hover:bg-gray-50 text-sm">Copiar ID</button>
+          <a id="btnDescargarPng" download class="px-3 py-2 rounded-md border bg-white hover:bg-gray-50 text-sm" href="#">Descargar PNG</a>
+          <button id="btnImprimirPdf" class="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 text-sm">Imprimir</button>
+          <button class="px-3 py-2 rounded-md border bg-white hover:bg-gray-50 text-sm" data-close-modal="modalCodigo">Cerrar</button>
+        </div>
+        <div id="msgModal" class="text-sm"></div>
+      </div>
     </div>
-  </div></div>
+  </div>
 
-  <div id="scannerModal"><div id="scannerModalContent">
-    <h3 class="text-lg font-bold">Escanear Código</h3>
-    <div id="reader"></div>
-    <p id="scannerMessage"></p>
-    <button id="closeScannerModalBtn" class="btn btn-secondary mt-4">Cerrar Escáner</button>
-  </div></div>
+  <!-- Modal: Escaneo con Cámara -->
+  <div id="modalEscaner" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50"></div>
+    <div class="relative max-w-3xl mx-auto mt-10 bg-white rounded-2xl shadow-lg fade-in">
+      <div class="px-5 py-4 border-b flex items-center justify-between">
+        <h3 class="text-lg font-medium">Escanear código de barras</h3>
+        <button class="text-gray-500 hover:text-gray-700" data-close-modal="modalEscaner" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <label class="text-sm">Cámara:</label>
+          <select id="selCamaras" class="rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-sm"></select>
+          <button id="btnLinterna" class="px-3 py-2 rounded-md border bg-white hover:bg-gray-50 text-sm disabled:opacity-50" disabled>Linterna</button>
+        </div>
 
-  <!-- Libs -->
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+        <div class="relative rounded-xl overflow-hidden bg-black scan-overlay">
+          <video id="video" class="w-full h-[55vh] object-cover"></video>
+        </div>
 
-  <!-- App script -->
+        <div class="text-xs text-gray-500">
+          Alineá el código dentro del marco. En algunos dispositivos la linterna puede no estar disponible.
+        </div>
+
+        <div class="flex items-center justify-end gap-2">
+          <button class="px-3 py-2 rounded-md border bg-white hover:bg-gray-50 text-sm" data-close-modal="modalEscaner">Cerrar</button>
+        </div>
+        <div id="msgEscaner" class="text-sm"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Configuración (placeholder, se cierra con ESC igualmente) -->
+  <div id="modalConfig" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/40"></div>
+    <div class="relative max-w-lg mx-auto mt-24 bg-white rounded-2xl shadow-lg fade-in">
+      <div class="px-5 py-4 border-b flex items-center justify-between">
+        <h3 class="text-lg font-medium">Configuración</h3>
+        <button class="text-gray-500 hover:text-gray-700" data-close-modal="modalConfig" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="p-5 space-y-4 text-sm text-gray-600">
+        <p>No hay opciones por ahora. Este panel está para expandir a futuro.</p>
+        <div class="text-xs text-gray-400">Se cierra con ESC.</div>
+        <div class="flex items-center justify-end gap-2">
+          <button class="px-3 py-2 rounded-md border bg-white hover:bg-gray-50 text-sm" data-close-modal="modalConfig">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    // ===== Imports =====
+    import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@latest/+esm';
 
-    // Firebase config tuyo
+    import {
+      initializeApp
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import {
+      getFirestore, doc, getDoc, setDoc, serverTimestamp,
+      collection, query, where, getDocs, collectionGroup
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    import {
+      getAuth, onAuthStateChanged
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import {
+      getStorage, ref as storageRef, uploadString, getDownloadURL
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js';
+
+    // ===== Firebase init (CONFIG INTEGRADO) =====
     const firebaseConfig = {
       apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
       authDomain: "exptcoord.firebaseapp.com",
@@ -176,37 +246,545 @@
       measurementId: "G-94PRRLFZV4"
     };
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
     const db = getFirestore(app);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
 
-    // Tabs
-    const tabCarga = document.getElementById('tabCarga');
-    const tabBusqueda = document.getElementById('tabBusqueda');
-    const cargaSection = document.getElementById('cargaSection');
-    const busquedaSection = document.getElementById('busquedaSection');
+    // ===== Utiles UI =====
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-    tabCarga.addEventListener('click',()=>{
-      cargaSection.classList.remove('hidden');
-      busquedaSection.classList.add('hidden');
-      tabCarga.classList.add('tab-active');tabCarga.classList.remove('tab-inactive');
-      tabBusqueda.classList.add('tab-inactive');tabBusqueda.classList.remove('tab-active');
+    const show = (id) => { const el = document.getElementById(id); el?.classList.remove('hidden'); }
+    const hide = (id) => { const el = document.getElementById(id); el?.classList.add('hidden'); }
+
+    const toast = (el, msg, ok = true) => {
+      el.textContent = msg;
+      el.className = "text-sm mt-2 " + (ok ? "text-green-600" : "text-red-600");
+      setTimeout(()=>{ el.textContent = ""; el.className="text-sm"; }, 3000);
+    };
+
+    // ===== Tabs =====
+    const tabBtnCarga = $('#tabBtnCarga');
+    const tabBtnBusqueda = $('#tabBtnBusqueda');
+    const panelCarga = $('#panelCarga');
+    const panelBusqueda = $('#panelBusqueda');
+
+    function setActiveTab(tab) {
+      const isCarga = tab === 'carga';
+      tabBtnCarga.dataset.active = isCarga;
+      tabBtnBusqueda.dataset.active = !isCarga;
+      panelCarga.classList.toggle('hidden', !isCarga);
+      panelBusqueda.classList.toggle('hidden', isCarga);
+      if (!isCarga) focusUsbInput();
+    }
+
+    tabBtnCarga.addEventListener('click', () => setActiveTab('carga'));
+    tabBtnBusqueda.addEventListener('click', () => setActiveTab('busqueda'));
+
+    // ===== Inputs CARGA & validación =====
+    const inCodigo = $('#inCodigo');
+    const inNumero = $('#inNumero');
+    const inLetra  = $('#inLetra');
+    const inAnio   = $('#inAnio');
+    const btnGenerar = $('#btnGenerar');
+    const msgCarga = $('#msgCarga');
+
+    function normalizeLetra() {
+      inLetra.value = (inLetra.value || '').toUpperCase().replace(/[^A-Z]/g,'').slice(0,1);
+    }
+    inLetra.addEventListener('input', normalizeLetra);
+
+    function validCarga() {
+      const codigoOk = /^\d{4}$/.test(inCodigo.value);
+      const numeroOk = /^\d{6}$/.test(inNumero.value);
+      const letraOk  = /^[A-Z]$/.test((inLetra.value||'').toUpperCase());
+      const anioOk   = /^\d{4}$/.test(inAnio.value);
+      btnGenerar.disabled = !(codigoOk && numeroOk && letraOk && anioOk);
+    }
+    [inCodigo, inNumero, inLetra, inAnio].forEach(i=> i.addEventListener('input', ()=>{ normalizeLetra(); validCarga(); }));
+    validCarga();
+
+    // ===== ID helpers =====
+    const makeId = (c,n,l,a) => `${c}-${n}-${(l||'').toUpperCase()}-${a}`;
+    const parseId = (id) => {
+      const m = /^(\d{4})-(\d{6})-([A-Z])-(\d{4})$/.exec((id||'').toUpperCase());
+      if (!m) return null;
+      return { codigo: m[1], numero: m[2], letra: m[3], anio: m[4] };
+    };
+
+    // ===== Modal helpers (ESC cierra todos) =====
+    function bindModalEsc() {
+      window.addEventListener('keydown', (e)=>{
+        if (e.key === 'Escape') {
+          ['modalCodigo','modalEscaner','modalConfig'].forEach(hide);
+          stopScanner();
+        }
+      });
+    }
+    bindModalEsc();
+    $$('[data-close-modal]').forEach(btn => {
+      btn.addEventListener('click', (e)=> {
+        const id = e.currentTarget.getAttribute('data-close-modal');
+        hide(id);
+        if (id === 'modalEscaner') stopScanner();
+      });
     });
-    tabBusqueda.addEventListener('click',()=>{
-      busquedaSection.classList.remove('hidden');
-      cargaSection.classList.add('hidden');
-      tabBusqueda.classList.add('tab-active');tabBusqueda.classList.remove('tab-inactive');
-      tabCarga.classList.add('tab-inactive');tabCarga.classList.remove('tab-active');
+    $('#btnConfig').addEventListener('click', ()=> show('modalConfig'));
+
+    // ===== Generar código de barras (persistente) =====
+    const legendTextConst = "Coordinación General de Programa de Tierras y Regularización Dominial";
+    const barcodeCanvas = $('#barcodeCanvas');
+    const barcodeHuman = $('#barcodeHuman');
+    const legendText = $('#legendText');
+    const btnCopiarId = $('#btnCopiarId');
+    const btnDescargarPng = $('#btnDescargarPng');
+    const btnImprimirPdf = $('#btnImprimirPdf');
+    const msgModal = $('#msgModal');
+
+    async function ensureCodigoPersistido(expedienteId) {
+      // 1) Chequear si ya existe
+      const ref = doc(db, 'codigos', expedienteId);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        return snap.data(); // { imageUrl, value, ... }
+      }
+      // 2) Generar PNG (600x240 aprox. para 50x20mm a ~300dpi)
+      const pngDataUrl = await generarBarcodePNG(expedienteId, 600, 240);
+
+      // 3) Subir a Storage
+      const path = `labels/${expedienteId}.png`;
+      const sref = storageRef(storage, path);
+      await uploadString(sref, pngDataUrl, 'data_url');
+      const imageUrl = await getDownloadURL(sref);
+
+      // 4) Guardar metadata en Firestore
+      const user = auth.currentUser;
+      const data = {
+        expedienteId,
+        symbology: 'code128',
+        value: expedienteId,
+        imageUrl,
+        printLabelText: legendTextConst,
+        createdAt: serverTimestamp(),
+        createdBy: user ? (user.email || user.uid) : null
+      };
+      await setDoc(ref, data, { merge: true });
+      return data;
+    }
+
+    function generarBarcodeOnCanvas(value, widthPx=600, heightPx=240) {
+      const ctx = barcodeCanvas.getContext('2d');
+      barcodeCanvas.width = widthPx;
+      barcodeCanvas.height = heightPx;
+      // Limpio
+      ctx.clearRect(0,0,widthPx,heightPx);
+      // Genero en un canvas temporal ajustando altura para buena lectura
+      JsBarcode(barcodeCanvas, value, {
+        format: 'CODE128',
+        displayValue: false, // el texto legible lo agregamos debajo en HTML/PDF
+        margin: 10,
+        background: '#ffffff',
+        lineColor: '#000000',
+        width: 2, // grosor de barra; se auto-ajusta con widthPx
+        height: heightPx - 20
+      });
+    }
+
+    function generarBarcodePNG(value, widthPx=600, heightPx=240) {
+      return new Promise((resolve) => {
+        generarBarcodeOnCanvas(value, widthPx, heightPx);
+        resolve(barcodeCanvas.toDataURL('image/png'));
+      });
+    }
+
+    btnGenerar.addEventListener('click', async ()=>{
+      try {
+        const expedienteId = makeId(inCodigo.value, inNumero.value, inLetra.value, inAnio.value);
+        // Persisto o reutilizo existente
+        const meta = await ensureCodigoPersistido(expedienteId);
+        // Render preview en modal
+        await generarBarcodeOnCanvas(expedienteId, 600, 240);
+        barcodeHuman.textContent = expedienteId;
+        legendText.textContent = legendTextConst;
+        // Preparar “Descargar PNG”
+        btnDescargarPng.href = meta.imageUrl;
+        // Mostrar modal
+        show('modalCodigo');
+        msgModal.textContent = "";
+      } catch (e) {
+        console.error(e);
+        toast(msgCarga, "Error al generar/guardar el código.", false);
+      }
     });
 
-    // Login básico
-    onAuthStateChanged(auth, user=>{
-      if(user){document.getElementById('login-section').classList.add('hidden');document.getElementById('main-app-wrapper').classList.remove('hidden');}
-      else{document.getElementById('login-section').classList.remove('hidden');document.getElementById('main-app-wrapper').classList.add('hidden');}
+    btnCopiarId.addEventListener('click', async ()=>{
+      const text = barcodeHuman.textContent || "";
+      try {
+        await navigator.clipboard.writeText(text);
+        toast(msgModal, "ID copiado al portapapeles.");
+      } catch {
+        toast(msgModal, "No se pudo copiar.", false);
+      }
     });
-    document.getElementById('loginForm').addEventListener('submit',async e=>{
-      e.preventDefault();
-      try{await signInWithEmailAndPassword(auth, e.target.email.value, e.target.password.value);}catch(err){alert(err.message);}
+
+    btnImprimirPdf.addEventListener('click', async ()=>{
+      try {
+        const expedienteId = barcodeHuman.textContent || "";
+        // A4 = 210x297mm; queremos ETIQUETA de 50x20mm centrada
+        const { jsPDF } = window.jspdf;
+        const docPDF = new jsPDF({ unit: 'mm', format: 'a4' });
+        const pageW = 210, pageH = 297;
+        const labelW = 50, labelH = 20;
+        const x = (pageW - labelW) / 2;
+        const y = (pageH - labelH) / 2;
+
+        // Usar lo que está en canvas => PNG dataURL
+        const png = barcodeCanvas.toDataURL('image/png');
+
+        // Leyenda arriba (pequeña)
+        docPDF.setFontSize(8);
+        docPDF.text(legendTextConst, pageW/2, y - 3, { align: 'center' });
+
+        // Código (50x20 mm exactos)
+        docPDF.addImage(png, 'PNG', x, y, labelW, labelH);
+
+        // Texto legible debajo
+        docPDF.setFontSize(12);
+        docPDF.text(expedienteId, pageW/2, y + labelH + 6, { align: 'center' });
+
+        // Abrir en nueva pestaña (preciso para imprimir)
+        const pdfUrl = docPDF.output('bloburl');
+        window.open(pdfUrl, '_blank');
+      } catch (e) {
+        console.error(e);
+        toast(msgModal, "No se pudo generar el PDF.", false);
+      }
     });
+
+    // ===== BÚSQUEDA: por 4 campos o por ID completo =====
+    const bCodigo = $('#bCodigo');
+    const bNumero = $('#bNumero');
+    const bLetra  = $('#bLetra');
+    const bAnio   = $('#bAnio');
+    const btnBuscar = $('#btnBuscar');
+    const resultados = $('#resultados');
+    const usbScanInput = $('#usbScanInput');
+
+    function focusUsbInput() {
+      usbScanInput.value = "";
+      usbScanInput.focus({ preventScroll: true });
+    }
+
+    // Lector USB: suele “escribir” y enviar Enter
+    usbScanInput.addEventListener('keydown', (e)=>{
+      if (e.key === 'Enter') {
+        const val = usbScanInput.value.trim();
+        const parsed = parseId(val);
+        if (parsed) {
+          buscarPorId(val);
+        } else {
+          toast(resultados, "Lectura inválida del lector USB.", false);
+        }
+        usbScanInput.value = "";
+      }
+    });
+
+    btnBuscar.addEventListener('click', async ()=>{
+      const id = makeId(
+        bCodigo.value.padStart(4,'0'),
+        bNumero.value.padStart(6,'0'),
+        (bLetra.value||'').toUpperCase(),
+        bAnio.value
+      );
+      const parsed = parseId(id);
+      if (!parsed) {
+        resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-red-600">Completá los 4 campos correctamente (####-######-L-####).</div>`;
+        return;
+      }
+      await buscarPorId(id);
+    });
+
+    async function buscarPorId(expedienteId) {
+      resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-gray-600">Buscando ${expedienteId}…</div>`;
+
+      // 1) Intentar doc directo en 'expedientes'
+      let expedienteData = null;
+      let expedienteDocId = null;
+      try {
+        const direct = await getDoc(doc(db, 'expedientes', expedienteId));
+        if (direct.exists()) {
+          expedienteData = direct.data();
+          expedienteDocId = direct.id;
+        }
+      } catch {}
+
+      // 2) Si no existe, intentar por campos (si ese modelo se usa)
+      if (!expedienteData) {
+        const parsed = parseId(expedienteId);
+        if (parsed) {
+          const q = query(
+            collection(db, 'expedientes'),
+            where('codigo','==', parsed.codigo),
+            where('numero','==', parsed.numero),
+            where('letra','==', parsed.letra),
+            where('anio','==', parsed.anio)
+          );
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            const d = snap.docs[0];
+            expedienteData = d.data();
+            expedienteDocId = d.id;
+          }
+        }
+      }
+
+      // 3) Movimientos: si existe subcolección “movimientos” en cada expediente
+      let movimientos = [];
+      if (expedienteDocId) {
+        const movQ = query(collection(db, 'expedientes', expedienteDocId, 'movimientos'));
+        const movSnap = await getDocs(movQ);
+        movimientos = movSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      }
+
+      // 4) Si el modelo real usa collectionGroup('movimientos') con campo expedienteId…
+      if (movimientos.length === 0) {
+        try {
+          const cg = query(collectionGroup(db, 'movimientos'), where('expedienteId','==', expedienteId));
+          const cgSnap = await getDocs(cg);
+          movimientos = cgSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        } catch {}
+      }
+
+      renderResultados(expedienteId, expedienteData, movimientos);
+    }
+
+    function renderResultados(expedienteId, expedienteData, movimientos) {
+      if (!expedienteData && movimientos.length === 0) {
+        resultados.innerHTML = `
+          <div class="border rounded-xl p-4">
+            <div class="font-medium">Sin resultados</div>
+            <div class="text-sm text-gray-600 mt-1">No se encontró información para <span class="font-mono">${expedienteId}</span>.</div>
+          </div>`;
+        return;
+      }
+
+      const movRows = movimientos.map(m => `
+        <tr>
+          <td class="px-3 py-2 border-b">${m.fecha || '-'}</td>
+          <td class="px-3 py-2 border-b">${m.oficina || '-'}</td>
+          <td class="px-3 py-2 border-b">${m.estado || '-'}</td>
+          <td class="px-3 py-2 border-b">${m.observaciones || '-'}</td>
+        </tr>
+      `).join('') || `
+        <tr><td colspan="4" class="px-3 py-6 text-center text-gray-500">Sin movimientos registrados</td></tr>
+      `;
+
+      resultados.innerHTML = `
+        <div class="border rounded-xl overflow-hidden">
+          <div class="px-4 py-3 bg-gray-50 border-b">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm text-gray-500">Expediente</div>
+                <div class="font-semibold font-mono">${expedienteId}</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <a class="px-3 py-2 rounded-md border bg-white hover:bg-gray-50 text-sm" href="#" id="resDescargarEtiqueta">Descargar etiqueta</a>
+                <button class="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 text-sm" id="resImprimirEtiqueta">Imprimir etiqueta</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4">
+            <div class="mb-3 text-sm text-gray-500 border-b pb-2">Movimientos</div>
+            <div class="overflow-auto">
+              <table class="min-w-full text-sm">
+                <thead>
+                  <tr class="text-left text-gray-600">
+                    <th class="px-3 py-2 border-b">Fecha</th>
+                    <th class="px-3 py-2 border-b">Oficina</th>
+                    <th class="px-3 py-2 border-b">Estado</th>
+                    <th class="px-3 py-2 border-b">Observaciones</th>
+                  </tr>
+                </thead>
+                <tbody>${movRows}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Wire de botones etiqueta desde resultados:
+      (async ()=>{
+        try {
+          const meta = await ensureCodigoPersistido(expedienteId);
+          const a = $('#resDescargarEtiqueta');
+          a.href = meta.imageUrl;
+          a.setAttribute('download', `${expedienteId}.png`);
+          $('#resImprimirEtiqueta').addEventListener('click', async ()=>{
+            // Cargar en modal para reusar PDF
+            await generarBarcodeOnCanvas(expedienteId, 600, 240);
+            barcodeHuman.textContent = expedienteId;
+            btnDescargarPng.href = meta.imageUrl;
+            legendText.textContent = legendTextConst;
+            show('modalCodigo');
+          });
+        } catch {}
+      })();
+    }
+
+    // ===== Escaneo con cámara (ZXing) =====
+    const modalEscaner = $('#modalEscaner');
+    const selCamaras = $('#selCamaras');
+    const btnEscanear = $('#btnEscanear');
+    const btnLinterna = $('#btnLinterna');
+    const video = $('#video');
+    const msgEscaner = $('#msgEscaner');
+
+    let codeReader = null;
+    let currentDeviceId = null;
+    let currentStream = null;
+    let torchOn = false;
+
+    async function listCameras() {
+      selCamaras.innerHTML = "";
+      const devices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+      for (const d of devices) {
+        const opt = document.createElement('option');
+        opt.value = d.deviceId;
+        opt.textContent = d.label || `Cámara ${selCamaras.length+1}`;
+        selCamaras.appendChild(opt);
+      }
+      if (devices[0]) currentDeviceId = devices[0].deviceId;
+    }
+
+    async function startScanner() {
+      try {
+        codeReader = new BrowserMultiFormatReader();
+        await listCameras();
+        await playStream(currentDeviceId);
+        await startDecoding(currentDeviceId);
+      } catch (e) {
+        console.error(e);
+        msgEscaner.textContent = "No se pudo iniciar la cámara. Verificá permisos/HTTPS.";
+        msgEscaner.className = "text-sm text-red-600";
+      }
+    }
+
+    async function playStream(deviceId) {
+      stopStreamOnly();
+      const constraints = { video: { deviceId: deviceId ? { exact: deviceId } : undefined, facingMode: 'environment' } };
+      currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = currentStream;
+      await video.play();
+      await setupTorchSupport(currentStream);
+    }
+
+    async function startDecoding(deviceId) {
+      await codeReader.decodeFromVideoDevice(deviceId, video, (result, err) => {
+        if (result?.getText) {
+          const text = result.getText().trim();
+          const parsed = parseId(text);
+          if (parsed) {
+            // Éxito: cerrar modal, parar cámara y buscar
+            hide('modalEscaner');
+            stopScanner();
+            setActiveTab('busqueda');
+            buscarPorId(text);
+          }
+        }
+        // ignorar errores de lectura (normales durante el stream)
+      });
+    }
+
+    function stopStreamOnly() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(t => t.stop());
+        currentStream = null;
+      }
+    }
+    function stopScanner() {
+      try { codeReader?.reset(); } catch {}
+      stopStreamOnly();
+      torchOn = false;
+      btnLinterna.disabled = true;
+      btnLinterna.textContent = "Linterna";
+    }
+
+    // Torch support
+    async function setupTorchSupport(stream) {
+      btnLinterna.disabled = true;
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities?.();
+      if (capabilities && 'torch' in capabilities) {
+        btnLinterna.disabled = false;
+        btnLinterna.onclick = async () => {
+          try {
+            torchOn = !torchOn;
+            await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+            btnLinterna.textContent = torchOn ? "Linterna (ON)" : "Linterna";
+          } catch (e) {
+            console.warn("Torch no soportado o denegado", e);
+            btnLinterna.disabled = true;
+          }
+        };
+      }
+    }
+
+    selCamaras.addEventListener('change', async (e)=>{
+      currentDeviceId = e.target.value;
+      await playStream(currentDeviceId);
+      await startDecoding(currentDeviceId);
+    });
+
+    btnEscanear.addEventListener('click', async ()=>{
+      show('modalEscaner');
+      msgEscaner.textContent = "";
+      msgEscaner.className = "text-sm";
+      await startScanner();
+    });
+
+    // ===== Inicial =====
+    setActiveTab('carga');
+
+    onAuthStateChanged(auth, (user)=>{
+      // Solo a modo informativo/log
+      console.log(user ? `Autenticado: ${user.email || user.uid}` : 'No autenticado');
+    });
+
+    // ===== Accesibilidad: cerrar modal con click en backdrop =====
+    ['modalCodigo','modalEscaner','modalConfig'].forEach(id=>{
+      document.getElementById(id).addEventListener('click', (e)=>{
+        if (e.target.id === id) {
+          hide(id);
+          if (id === 'modalEscaner') stopScanner();
+        }
+      });
+    });
+
   </script>
+
+  <!-- Reglas sugeridas (configurá en Firebase Console):
+  ===========================================
+  // Firestore (reglas básicas):
+  rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      match /{document=**} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+
+  // Storage (reglas básicas):
+  rules_version = '2';
+  service firebase.storage {
+    match /b/{bucket}/o {
+      match /{allPaths=**} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+  ===========================================
+  -->
 </body>
 </html>
