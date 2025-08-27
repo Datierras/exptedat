@@ -5,12 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Expedientes · Carga & Búsqueda</title>
 
-  <!-- Tailwind CDN (enable dark mode via class) -->
-  <script>
-    tailwind = { config: { darkMode: 'class' } };
-  </script>
+  <!-- Tailwind CDN (utility only) -->
   <script src="https://cdn.tailwindcss.com"></script>
-
   <link rel="stylesheet" href="./styles.css" />
 
   <!-- JsBarcode (Code128) -->
@@ -18,21 +14,21 @@
   <!-- jsPDF (PDF en mm) -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
-<body class="h-full bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+<body class="h-full bg-gray-50 text-gray-900" style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
   <!-- Login Screen -->
   <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-4">
+    <div class="auth-card">
       <h1 class="text-xl font-semibold text-center">Iniciar sesión</h1>
       <div class="space-y-2">
-        <label for="loginEmail" class="block text-sm">Email</label>
+        <label for="loginEmail" class="block text-sm text-gray-600">Email</label>
         <input id="loginEmail" type="email" class="input" placeholder="usuario@coord.com" autocomplete="username" />
       </div>
       <div class="space-y-2">
-        <label for="loginPass" class="block text-sm">Contraseña</label>
+        <label for="loginPass" class="block text-sm text-gray-600">Contraseña</label>
         <input id="loginPass" type="password" class="input" placeholder="********" autocomplete="current-password" />
       </div>
       <button id="btnLogin" class="btn-primary w-full">Entrar</button>
-      <p id="loginMsg" class="text-sm h-5"></p>
+      <p id="loginMsg" class="text-sm h-5 text-center"></p>
     </div>
   </div>
 
@@ -43,14 +39,20 @@
       <header class="mb-4 sm:mb-6 flex items-center gap-3">
         <div>
           <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight">Gestión de Expedientes</h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400">Cargar expedientes, generar etiquetas y buscar movimientos.</p>
+          <p class="text-sm text-gray-500">Cargar expedientes, generar etiquetas y buscar movimientos.</p>
         </div>
         <div class="ml-auto flex items-center gap-2">
           <button id="btnConfig" class="icon-btn" title="Configuración" aria-label="Configuración">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94a7.43,7.43,0,0,0,0-1.88l2.11-1.65a.48.48,0,0,0,.12-.61l-2-3.46a.5.5,0,0,0-.6-.22l-2.49,1a7.23,7.23,0,0,0-1.62-.94l-.38-2.65A.49.49,0,0,0,13.63,2H10.37a.49.49,0,0,0-.49.42L9.5,5.07a7.23,7.23,0,0,0-1.62.94l-2.49-1a.5.5,0,0,0-.6.22l-2,3.46a.48.48,0,0,0,.12.61L4,11.06a7.43,7.43,0,0,0,0,1.88l-2.11,1.65a.48.48,0,0,0-.12.61l2,3.46a.5.5,0,0,0,.6.22l2.49-1a7.23,7.23,0,0,0,1.62.94l.38,2.65a.49.49,0,0,0,.49.42h3.26a.49.49,0,0,0,.49-.42l.38-2.65a7.23,7.23,0,0,0,1.62-.94l2.49,1a.5.5,0,0,0,.6-.22l2-3.46a.48.48,0,0,0-.12-.61ZM12,15.5A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.54-.94 3.31.83 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.54-.83 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.54.94-3.31-.83-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.54.83-3.31 2.37-2.37.943.576 2.146.146 2.573-1.066z" />
+              <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
           </button>
           <button id="btnLogout" class="icon-btn" title="Cerrar sesión" aria-label="Cerrar sesión">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M16 13v-2H7V8l-5 4 5 4v-3z"/><path d="M20 3h-8c-1.1 0-2 .9-2 2v4h2V5h8v14h-8v-4h-2v4c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+              <path d="M16 17l5-5-5-5" /><path d="M21 12H9" />
+            </svg>
           </button>
         </div>
       </header>
@@ -157,7 +159,7 @@
               <button id="btnEscanear" class="btn-secondary">Escanear</button>
               <button id="btnBusqAvanzada" class="btn-secondary">Búsqueda avanzada</button>
               <input id="usbScanInput" type="text" class="sr-only" aria-hidden="true" />
-              <span class="text-xs text-gray-500 dark:text-gray-400">Tip: lector USB escribe aquí en segundo plano; presioná el gatillo y listo.</span>
+              <span class="text-xs text-gray-500">Tip: lector USB escribe aquí en segundo plano; presioná el gatillo y listo.</span>
             </div>
 
             <!-- Advanced search form -->
@@ -181,12 +183,12 @@
               <div class="flex items-center gap-2">
                 <button id="btnBuscarAvanzado" class="btn-primary">Buscar con filtros</button>
                 <button id="btnLimpiarFiltros" class="btn-secondary">Limpiar filtros</button>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Regla: con <b>Partida Municipal</b> o <b>Provincial</b> alcanza con uno; para el resto, mínimo 2 campos.</p>
+                <p class="text-xs text-gray-500">Regla: con <b>Partida Municipal</b> o <b>Provincial</b> alcanza con uno; para el resto, mínimo 2 campos.</p>
               </div>
             </div>
 
             <div id="resultados" class="mt-2">
-              <div class="border rounded-xl p-4 text-sm text-gray-500 dark:text-gray-400">Sin resultados aún.</div>
+              <div class="border rounded-xl p-4 text-sm text-gray-500 bg-white">Sin resultados aún.</div>
             </div>
           </div>
         </section>
@@ -204,7 +206,7 @@
       </div>
       <div class="p-5 space-y-4">
         <div class="text-center">
-          <div id="legendText" class="text-xs text-gray-500 dark:text-gray-400 mb-1">Coordinación General de Programa de Tierras y Regularización Dominial</div>
+          <div id="legendText" class="text-xs text-gray-500 mb-1">Coordinación General de Programa de Tierras y Regularización Dominial</div>
           <canvas id="barcodeCanvas" class="mx-auto"></canvas>
           <div id="barcodeHuman" class="mt-1 font-medium tracking-wide"></div>
         </div>
@@ -238,7 +240,7 @@
           <video id="video" class="w-full h-[55vh] object-cover"></video>
         </div>
 
-        <div class="text-xs text-gray-500 dark:text-gray-400">
+        <div class="text-xs text-gray-500">
           Alineá el código dentro del marco. En algunos dispositivos la linterna puede no estar disponible.
         </div>
 
@@ -265,16 +267,7 @@
           <p class="hint">Se mostrará como autor en tus nuevos movimientos.</p>
           <div class="flex items-center gap-2"><button id="btnGuardarApodo" class="btn-primary">Guardar apodo</button><span id="msgApodo" class="text-sm"></span></div>
         </div>
-        <div class="space-y-2">
-          <label class="label">Tema</label>
-          <div class="flex flex-wrap gap-2">
-            <button class="btn-secondary" data-theme="system">Sistema</button>
-            <button class="btn-secondary" data-theme="light">Claro</button>
-            <button class="btn-secondary" data-theme="dark">Oscuro</button>
-          </div>
-          <p class="hint">Por defecto sigue la preferencia del sistema. Podés forzarlo aquí.</p>
-        </div>
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200">
           <button class="btn-secondary" data-close-modal="modalConfig">Cerrar</button>
         </div>
       </div>
