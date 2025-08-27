@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "build": "tailwindcss -i build/input.css -o styles.tailwind.css --minify"
+    "build": "npx tailwindcss -i ./input.css -o ../styles.tailwind.css --minify"
   },
   "devDependencies": {
     "tailwindcss": "^3.4.7",
