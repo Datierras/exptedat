@@ -4,14 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   \1
-  <!-- Twind: Tailwind-compatible runtime (production-safe) -->
-  <script type="module">
-    import { install } from 'https://cdn.jsdelivr.net/npm/@twind/core@1.1.3/+esm';
-    import presetTailwind from 'https://cdn.jsdelivr.net/npm/@twind/preset-tailwind@1.1.4/+esm';
-    install({ presets: [presetTailwind()] });
-  </script>
 
-<link rel="stylesheet" href="./styles.css" />
+<link rel="stylesheet" href="./styles.tailwind.css" />
+  <link rel="stylesheet" href="./styles.css" />
 
   <!-- JsBarcode (Code128) -->
   <script defer src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
@@ -37,7 +32,7 @@
   </div>
 
   <!-- App UI -->
-  <div id="appRoot" class="hidden min-h-screen">
+  <div id="appRoot" class="hidden hidden min-h-screen">
     <div class="max-w-6xl mx-auto p-4 sm:p-6">
       <!-- Topbar -->
       <header class="mb-4 sm:mb-6 flex items-center gap-3">
@@ -222,7 +217,7 @@
     <div class="modal-card glass-card">
       <div class="modal-head">
         <h3 class="text-lg font-medium">Etiqueta de expediente</h3>
-        <button class="modal-close" data-close-modal="modalCodigo" aria-label="Cerrar">✕</button>
+        <button class="modal-close" data-close-modal="modalConfig" data-close-modal="modalCodigo" aria-label="Cerrar">✕</button>
       </div>
       <div class="p-5 space-y-4">
         <div class="text-center">
@@ -247,7 +242,7 @@
     <div class="modal-card modal-wide glass-card">
       <div class="modal-head">
         <h3 class="text-lg font-medium">Escanear código de barras</h3>
-        <button class="modal-close" data-close-modal="modalEscaner" aria-label="Cerrar">✕</button>
+        <button class="modal-close" data-close-modal="modalConfig" data-close-modal="modalEscaner" aria-label="Cerrar">✕</button>
       </div>
       <div class="p-5 space-y-4">
         <div class="flex flex-wrap items-center gap-3">
@@ -273,12 +268,12 @@
   </div>
 
   <!-- Modal: Configuración -->
-  <div id="modalConfig" class="modal hidden">
+  <div id="modalConfig" class="hidden modal hidden">
     <div class="modal-backdrop glass-backdrop"></div>
     <div class="modal-card glass-card">
       <div class="modal-head">
         <h3 class="text-lg font-medium">Configuración</h3>
-        <button class="modal-close" data-close-modal="modalConfig" aria-label="Cerrar">✕</button>
+        <button class="modal-close" data-close-modal="modalConfig" data-close-modal="modalConfig" aria-label="Cerrar">✕</button>
       </div>
       <div class="p-5 space-y-4 text-sm">
         <div class="space-y-2">
@@ -294,6 +289,6 @@
     </div>
   </div>
 
-  <script type="module" src="./app.js"></script></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
