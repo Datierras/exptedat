@@ -1,4 +1,4 @@
-// Core App
+// Core App (light-only UI, refined modals, login gate)
 import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@latest/+esm';
 import { firebaseConfig } from './config.js';
 
@@ -7,7 +7,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
   getFirestore, doc, getDoc, setDoc, serverTimestamp,
-  collection, query, where, getDocs, collectionGroup, updateDoc
+  collection, query, where, getDocs, collectionGroup
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
@@ -27,25 +27,6 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 const showEl = (el) => el.classList.remove('hidden');
 const hideEl = (el) => el.classList.add('hidden');
-
-// --- Theme (dark / light / system) ---
-const THEME_KEY = 'theme-pref'; // 'system' | 'light' | 'dark'
-function applyTheme(pref) {
-  const root = document.documentElement; // <html>
-  const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const useDark = pref === 'dark' || (pref === 'system' && sysDark);
-  root.classList.toggle('dark', useDark);
-}
-function loadTheme() {
-  const pref = localStorage.getItem(THEME_KEY) || 'system';
-  applyTheme(pref);
-  return pref;
-}
-function setTheme(pref) {
-  localStorage.setItem(THEME_KEY, pref);
-  applyTheme(pref);
-}
-loadTheme();
 
 // --- UI elements ---
 const loginScreen = $('#loginScreen');
@@ -134,7 +115,7 @@ const msgApodo = $('#msgApodo');
 // Toast mini
 const toast = (el, msg, ok = true, timeout=3000) => {
   el.textContent = msg;
-  el.className = "text-sm mt-2 " + (ok ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400");
+  el.className = "text-sm mt-2 " + (ok ? "text-green-600" : "text-red-600");
   setTimeout(()=>{ el.textContent = ""; el.className="text-sm"; }, timeout);
 };
 
@@ -150,7 +131,7 @@ function setActiveTab(tab) {
 tabBtnCarga.addEventListener('click', () => setActiveTab('carga'));
 tabBtnBusqueda.addEventListener('click', () => setActiveTab('busqueda'));
 
-// Modals (ESC)
+// Modals (ESC + backdrop)
 function bindModalEsc() {
   window.addEventListener('keydown', (e)=>{
     if (e.key === 'Escape') {
@@ -202,7 +183,7 @@ btnLogin.addEventListener('click', async ()=>{
   } catch (e) {
     console.error(e);
     loginMsg.textContent = "No se pudo iniciar sesión.";
-    loginMsg.className = "text-sm text-red-600 dark:text-red-400 h-5";
+    loginMsg.className = "text-sm text-red-600 h-5";
   }
 });
 
@@ -214,15 +195,9 @@ btnLogout.addEventListener('click', async ()=>{
 async function loadApodo(uid) {
   try {
     const r = await getDoc(doc(db, 'usuarios', uid));
-    if (r.exists()) {
-      const ap = r.data().apodo || '';
-      confApodo.value = ap;
-    } else {
-      confApodo.value = '';
-    }
-  } catch {}
+    confApodo.value = r.exists() ? (r.data().apodo || '') : '';
+  } catch { confApodo.value = ''; }
 }
-
 btnGuardarApodo.addEventListener('click', async ()=>{
   const user = auth.currentUser;
   if (!user) return;
@@ -233,11 +208,6 @@ btnGuardarApodo.addEventListener('click', async ()=>{
     console.error(e);
     toast(msgApodo, "No se pudo guardar.", false);
   }
-});
-
-// Theme buttons
-$$('#modalConfig [data-theme]').forEach(btn => {
-  btn.addEventListener('click', ()=> setTheme(btn.getAttribute('data-theme')));
 });
 
 // --- Validación CARGA ---
@@ -415,7 +385,7 @@ btnBuscar.addEventListener('click', async ()=>{
   );
   const parsed = parseId(id);
   if (!parsed) {
-    resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-red-600 dark:text-red-400">Completá los 4 campos correctamente (####-######-L-####).</div>`;
+    resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-red-600">Completá los 4 campos correctamente (####-######-L-####).</div>`;
     return;
   }
   await buscarPorId(id);
@@ -436,7 +406,7 @@ function focusUsbInput() {
 }
 
 async function buscarPorId(expedienteId) {
-  resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-gray-600 dark:text-gray-300">Buscando ${expedienteId}…</div>`;
+  resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-gray-600 bg-white">Buscando ${expedienteId}…</div>`;
   let expedienteData = null;
   let expedienteDocId = null;
   try {
@@ -476,9 +446,9 @@ async function buscarPorId(expedienteId) {
 function renderResultados(expedienteId, expedienteData, movimientos) {
   if (!expedienteData && movimientos.length === 0) {
     resultados.innerHTML = `
-      <div class="border rounded-xl p-4">
+      <div class="border rounded-xl p-4 bg-white">
         <div class="font-medium">Sin resultados</div>
-        <div class="text-sm text-gray-600 dark:text-gray-300 mt-1">No se encontró información para <span class="font-mono">${expedienteId}</span>.</div>
+        <div class="text-sm text-gray-600 mt-1">No se encontró información para <span class="font-mono">${expedienteId}</span>.</div>
       </div>`;
     return;
   }
@@ -489,16 +459,16 @@ function renderResultados(expedienteId, expedienteData, movimientos) {
       <td class="px-3 py-2 border-b">${m.actorApodo || m.actorEmail || '-'}</td>
       <td class="px-3 py-2 border-b">${m.observaciones || '-'}</td>
     </tr>
-  `).join('') || `<tr><td colspan="4" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">Sin movimientos registrados</td></tr>`;
+  `).join('') || `<tr><td colspan="4" class="px-3 py-6 text-center text-gray-500">Sin movimientos registrados</td></tr>`;
 
   resultados.innerHTML = `
-    <div class="border rounded-xl overflow-hidden">
-      <div class="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800">
+    <div class="border rounded-xl overflow-hidden bg-white">
+      <div class="px-4 py-3 bg-gray-50 border-b">
         <div class="flex items-center justify-between">
           <div>
-            <div class="text-sm text-gray-500 dark:text-gray-400">Expediente</div>
+            <div class="text-sm text-gray-500">Expediente</div>
             <div class="font-semibold font-mono">${expedienteId}</div>
-            ${expedienteData?.extracto ? `<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">${expedienteData.extracto}</div>` : ''}
+            ${expedienteData?.extracto ? `<div class="text-xs text-gray-500 mt-1">${expedienteData.extracto}</div>` : ''}
           </div>
           <div class="flex items-center gap-2">
             <a class="btn-secondary text-sm" href="#" id="resDescargarEtiqueta">Descargar etiqueta</a>
@@ -508,11 +478,11 @@ function renderResultados(expedienteId, expedienteData, movimientos) {
       </div>
 
       <div class="p-4">
-        <div class="mb-3 text-sm text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800 pb-2">Movimientos</div>
+        <div class="mb-3 text-sm text-gray-500 border-b pb-2">Movimientos</div>
         <div class="overflow-auto">
           <table class="min-w-full text-sm">
             <thead>
-              <tr class="text-left text-gray-600 dark:text-gray-300">
+              <tr class="text-left text-gray-600">
                 <th class="px-3 py-2 border-b">Fecha</th>
                 <th class="px-3 py-2 border-b">Tipo</th>
                 <th class="px-3 py-2 border-b">Actor</th>
@@ -553,7 +523,6 @@ btnLimpiarFiltros.addEventListener('click', ()=>{
 });
 
 btnBuscarAvanzado.addEventListener('click', async ()=>{
-  // Regla: si hay partidaMunicipal o partidaProvincial, alcanza con uno para buscar.
   const pmu = aInputs.aPartidaMunicipal.value.trim();
   const ppr = aInputs.aPartidaProvincial.value.trim();
 
@@ -566,7 +535,6 @@ btnBuscarAvanzado.addEventListener('click', async ()=>{
     const vRaw = aInputs[k].value.trim();
     if (!vRaw) continue;
     let field, v = vRaw;
-    // Map keys to doc fields nomenclatura.*
     const map = {
       aCircunscripcion: 'nomenclatura.circunscripcion',
       aSeccion: 'nomenclatura.seccion',
@@ -589,19 +557,17 @@ btnBuscarAvanzado.addEventListener('click', async ()=>{
     otherFilled++;
   }
 
-  // Validate rule
   const hasPartida = !!pmu || !!ppr;
   if (!hasPartida && otherFilled < 2) {
-    resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-red-600 dark:text-red-400">Completá al menos 2 campos de nomenclatura o una Partida (Municipal o Provincial).</div>`;
+    resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-red-600 bg-white">Completá al menos 2 campos de nomenclatura o una Partida (Municipal o Provincial).</div>`;
     return;
   }
 
-  resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-gray-600 dark:text-gray-300">Buscando…</div>`;
+  resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-gray-600 bg-white">Buscando…</div>`;
 
   try {
     let snaps = [];
 
-    // Case 1: partidas
     if (hasPartida) {
       if (pmu && ppr) {
         const qBoth = query(
@@ -619,15 +585,12 @@ btnBuscarAvanzado.addEventListener('click', async ()=>{
       }
     }
 
-    // Case 2: other filters
     if (filters.length) {
-      // Build a single query with all == filters
       let qRef = collection(db, 'expedientes');
       for (const f of filters) qRef = query(qRef, where(f.field, f.op, f.value));
       snaps.push(await getDocs(qRef));
     }
 
-    // Merge results by expediente id
     const mapDocs = new Map();
     for (const sn of snaps) {
       sn.forEach(docSnap => mapDocs.set(docSnap.id, { id: docSnap.id, ...docSnap.data() }));
@@ -635,18 +598,17 @@ btnBuscarAvanzado.addEventListener('click', async ()=>{
     const arr = [...mapDocs.values()];
 
     if (!arr.length) {
-      resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm">No se encontraron expedientes con esos filtros.</div>`;
+      resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm bg-white">No se encontraron expedientes con esos filtros.</div>`;
       return;
     }
 
-    // Render simple list + allow click to show movimientos
     resultados.innerHTML = `
       <div class="space-y-3">
         ${arr.map(e => `
-          <div class="border rounded-xl p-3 flex items-center justify-between gap-3">
+          <div class="border rounded-xl p-3 flex items-center justify-between gap-3 bg-white">
             <div>
               <div class="font-mono font-semibold">${e.codigo}-${e.numero}-${e.letra}-${e.anio}</div>
-              ${e.extracto ? `<div class="text-xs text-gray-500 dark:text-gray-400">${e.extracto}</div>` : ''}
+              ${e.extracto ? `<div class="text-xs text-gray-500">${e.extracto}</div>` : ''}
             </div>
             <div class="flex items-center gap-2">
               <button class="btn-secondary text-sm" data-exp="${e.codigo}-${e.numero}-${e.letra}-${e.anio}" data-action="ver">Ver movimientos</button>
@@ -663,7 +625,7 @@ btnBuscarAvanzado.addEventListener('click', async ()=>{
     console.error(e);
     const msg = e?.message || "";
     const m = /https?:\/\/console\.firebase\.google\.com\/[^ ]+/.exec(msg);
-    resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-red-600 dark:text-red-400">Falta un índice compuesto para esta combinación. ${m ? `<a class="underline" target="_blank" href="${m[0]}">Crear índice</a>`:''}</div>`;
+    resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-red-600 bg-white">Falta un índice compuesto para esta combinación. ${m ? `<a class="underline" target="_blank" href="${m[0]}">Crear índice</a>`:''}</div>`;
   }
 });
 
@@ -695,7 +657,7 @@ async function startScanner() {
   } catch (e) {
     console.error(e);
     msgEscaner.textContent = "No se pudo iniciar la cámara. Verificá permisos/HTTPS.";
-    msgEscaner.className = "text-sm text-red-600 dark:text-red-400";
+    msgEscaner.className = "text-sm text-red-600";
   }
 }
 async function playStream(deviceId) {
@@ -759,8 +721,6 @@ btnEscanear.addEventListener('click', async ()=>{
   msgEscaner.className = "text-sm";
   await startScanner();
 });
-
-// --- Modal Código backdrop close is already set above ---
 
 // --- Init ---
 setActiveTab('carga');
