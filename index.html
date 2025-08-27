@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Expedientes · Carga & Búsqueda</title>
 
-  <!-- Tailwind CDN (utility only) -->
+  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="./styles.css" />
 
@@ -111,6 +111,17 @@
               </label>
             </div>
 
+            <!-- Destino / Origen -->
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div class="sm:col-span-2 lg:col-span-2">
+                <label class="label" for="selArea"><span id="lblArea">Destino</span></label>
+                <select id="selArea" class="input">
+                  <option value="">Seleccioná destino</option>
+                </select>
+                <p class="hint">Campo obligatorio.</p>
+              </div>
+            </div>
+
             <!-- Nomenclatura Toggle -->
             <div class="mt-6 flex flex-col gap-4">
               <button id="showNomenclaturaBtn" class="btn-secondary w-full">Nomenclatura</button>
@@ -134,8 +145,8 @@
 
             <!-- Actions -->
             <div class="mt-6 flex flex-wrap items-center gap-3">
-              <button id="btnGuardarExpediente" class="btn-secondary">Guardar expediente</button>
-              <button id="btnGenerar" class="btn-primary" disabled>Generar código</button>
+              <button id="btnGuardarExpediente" class="btn-primary">Guardar movimiento</button>
+              <button id="btnGenerar" class="btn-soft" disabled>Generar código</button>
               <span id="msgCarga" class="text-sm"></span>
             </div>
           </div>
@@ -193,13 +204,18 @@
           </div>
         </section>
       </main>
+
+      <!-- Footer (autor) -->
+      <footer class="mt-10 mb-2 text-center text-xs text-gray-400 select-none">
+        Sistema realizado por Bottino Cristian - 25618
+      </footer>
     </div>
   </div>
 
   <!-- Modal: Generador/Preview de Código -->
   <div id="modalCodigo" class="modal hidden">
-    <div class="modal-backdrop"></div>
-    <div class="modal-card">
+    <div class="modal-backdrop glass-backdrop"></div>
+    <div class="modal-card glass-card">
       <div class="modal-head">
         <h3 class="text-lg font-medium">Etiqueta de expediente</h3>
         <button class="modal-close" data-close-modal="modalCodigo" aria-label="Cerrar">✕</button>
@@ -223,8 +239,8 @@
 
   <!-- Modal: Escaneo con Cámara -->
   <div id="modalEscaner" class="modal hidden">
-    <div class="modal-backdrop"></div>
-    <div class="modal-card modal-wide">
+    <div class="modal-backdrop glass-backdrop"></div>
+    <div class="modal-card modal-wide glass-card">
       <div class="modal-head">
         <h3 class="text-lg font-medium">Escanear código de barras</h3>
         <button class="modal-close" data-close-modal="modalEscaner" aria-label="Cerrar">✕</button>
@@ -254,8 +270,8 @@
 
   <!-- Modal: Configuración -->
   <div id="modalConfig" class="modal hidden">
-    <div class="modal-backdrop"></div>
-    <div class="modal-card">
+    <div class="modal-backdrop glass-backdrop"></div>
+    <div class="modal-card glass-card">
       <div class="modal-head">
         <h3 class="text-lg font-medium">Configuración</h3>
         <button class="modal-close" data-close-modal="modalConfig" aria-label="Cerrar">✕</button>
