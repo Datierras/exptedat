@@ -1,4 +1,4 @@
-// Core App (light-only UI, refined modals, login gate)
+// Core App (v3): primary Guardar Movimiento, soft Generar Código, Destino/Origen, ubicacionActual, glass modals
 import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@latest/+esm';
 import { firebaseConfig } from './config.js';
 
@@ -21,6 +21,26 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
+
+// --- Constants ---
+const AREA_PROPIA = "Coordinación General de Programa de Tierras y Regularización Dominial"; // para ubicacionActual al recibir
+const AREAS = [
+  "Administración General",
+  "D.G. de Ingreso de Tierras",
+  "D.G. de Escrituración Familiar",
+  "D.G. de Regularización Dominial",
+  "D.G. de Programa de Tierras",
+  "C.G.P. Legal, Administrativo e Institucional",
+  "C.G.P. de Hábitat, Vivienda e Integración Urbana",
+  "C.G.P. Abordate Territorial",
+  "C.G.P. de Obras Particulares y Catastro",
+  "C.G.P. de Gerencia de Proyectos",
+  "Contaduría",
+  "Jefatura de Compras y Contrataciones",
+  "Tesorería",
+  "Mesa de Entradas"
+];
+const legendTextConst = AREA_PROPIA;
 
 // --- Helpers DOM ---
 const $ = (sel) => document.querySelector(sel);
@@ -51,6 +71,17 @@ const btnGuardarExpediente = $('#btnGuardarExpediente');
 const msgCarga = $('#msgCarga');
 const showNomenclaturaBtn = $('#showNomenclaturaBtn');
 const nomenclaturaFields = $('#nomenclatura-fields');
+const selArea = $('#selArea');
+const lblArea = $('#lblArea');
+
+// load AREAS into select
+(function fillAreas(){
+  for (const a of AREAS) {
+    const opt = document.createElement('option');
+    opt.value = a; opt.textContent = a;
+    selArea.appendChild(opt);
+  }
+})();
 
 // Carga - nomenclatura inputs
 const nomIds = [
@@ -65,6 +96,15 @@ function getMovTipo() {
   const v = document.querySelector('input[name="movTipo"]:checked')?.value || 'Enviamos';
   return v;
 }
+function refreshAreaLabel(){
+  const t = getMovTipo();
+  lblArea.textContent = (t === 'Enviamos') ? 'Destino' : 'Origen';
+  const ph = (t === 'Enviamos') ? 'Seleccioná destino' : 'Seleccioná origen';
+  selArea.querySelector('option[value=""]').textContent = ph;
+}
+$('#movEnviamos').addEventListener('change', refreshAreaLabel);
+$('#movRecibimos').addEventListener('change', refreshAreaLabel);
+refreshAreaLabel();
 
 // Búsqueda
 const bCodigo = $('#bCodigo');
@@ -95,7 +135,6 @@ const video = $('#video');
 const msgEscaner = $('#msgEscaner');
 
 // Barcode modal
-const legendTextConst = "Coordinación General de Programa de Tierras y Regularización Dominial";
 const barcodeCanvas = $('#barcodeCanvas');
 const barcodeHuman = $('#barcodeHuman');
 const legendText = $('#legendText');
@@ -238,11 +277,13 @@ showNomenclaturaBtn.addEventListener('click', ()=>{
   nomenclaturaFields.classList.toggle('hidden');
 });
 
-// Guardar Expediente
+// Guardar Movimiento
 btnGuardarExpediente.addEventListener('click', async ()=>{
   const id = makeId(inCodigo.value, inNumero.value, inLetra.value, inAnio.value);
   const parsed = parseId(id);
   if (!parsed) { toast(msgCarga, "Completá Código/Número/Letra/Año válidos.", false); return; }
+  const area = selArea.value;
+  if (!area) { toast(msgCarga, "Seleccioná Destino/Origen.", false); return; }
   const extracto = (inExtracto.value || "").trim();
   const nom = {};
   for (const [k, el] of Object.entries(nomInputs)) {
@@ -254,7 +295,9 @@ btnGuardarExpediente.addEventListener('click', async ()=>{
   }
   const user = auth.currentUser;
   try {
-    // Upsert expediente
+    // Upsert expediente + ubicacionActual
+    const tipo = getMovTipo();
+    const ubicacionActual = (tipo === 'Enviamos') ? area : AREA_PROPIA;
     const ref = doc(db, 'expedientes', id);
     await setDoc(ref, {
       codigo: parsed.codigo,
@@ -263,58 +306,45 @@ btnGuardarExpediente.addEventListener('click', async ()=>{
       anio: parsed.anio,
       extracto,
       nomenclatura: nom,
-      updatedAt: serverTimestamp()
+      ubicacionActual,
+      updatedAt: serverTimestamp(),
+      lastMov: { tipo, area, fecha: serverTimestamp() }
     }, { merge: true });
 
-    // Registrar movimiento
-    let actorApodo = '';
-    try {
-      const u = await getDoc(doc(db,'usuarios', user.uid));
-      actorApodo = (u.exists() && u.data().apodo) ? u.data().apodo : (user.email || user.uid);
-    } catch { actorApodo = user?.email || 'desconocido'; }
-    const tipo = getMovTipo();
-    const movRef = doc(collection(db, 'expedientes', id, 'movimientos'));
-    await setDoc(movRef, {
+    // Registrar movimiento (guardo sólo el campo que aplique)
+    const movData = {
       expedienteId: id,
       tipo,
       fecha: serverTimestamp(),
-      actorApodo,
+      actorApodo: (await getUserApodo()) || (user?.email || user?.uid || 'desconocido'),
       actorUid: user?.uid || null,
-      actorEmail: user?.email || null
-    });
+      actorEmail: user?.email || null,
+      area // guardo como campo genérico y también específico abajo
+    };
+    if (tipo === 'Enviamos') movData.destino = area;
+    else movData.origen = area;
 
-    toast(msgCarga, "Expediente guardado y movimiento registrado.");
+    const movRef = doc(collection(db, 'expedientes', id, 'movimientos'));
+    await setDoc(movRef, movData);
+
+    toast(msgCarga, "Movimiento guardado y expediente actualizado.");
   } catch (e) {
     console.error(e);
-    toast(msgCarga, "No se pudo guardar el expediente.", false);
+    toast(msgCarga, "No se pudo guardar el movimiento.", false);
   }
 });
 
-// Generación de barcode persistente
-async function ensureCodigoPersistido(expedienteId) {
-  const ref = doc(db, 'codigos', expedienteId);
-  const snap = await getDoc(ref);
-  if (snap.exists()) return snap.data();
-  const pngDataUrl = await generarBarcodePNG(expedienteId, 600, 240);
-  const path = `labels/${expedienteId}.png`;
-  const sref = storageRef(storage, path);
-  await uploadString(sref, pngDataUrl, 'data_url');
-  const imageUrl = await getDownloadURL(sref);
-  const user = auth.currentUser;
-  const data = {
-    expedienteId,
-    symbology: 'code128',
-    value: expedienteId,
-    imageUrl,
-    printLabelText: legendTextConst,
-    createdAt: serverTimestamp(),
-    createdBy: user ? (user.email || user.uid) : null
-  };
-  await setDoc(ref, data, { merge: true });
-  return data;
+async function getUserApodo(){
+  try {
+    const user = auth.currentUser;
+    if (!user) return null;
+    const u = await getDoc(doc(db,'usuarios', user.uid));
+    return (u.exists() && u.data().apodo) ? u.data().apodo : (user.email || user.uid);
+  } catch { return null; }
 }
 
-function generarBarcodeOnCanvas(value, widthPx=600, heightPx=240) {
+// Generación de barcode (abre modal al instante + persiste en background)
+async function generarBarcodeOnCanvas(value, widthPx=600, heightPx=240) {
   const ctx = barcodeCanvas.getContext('2d');
   barcodeCanvas.width = widthPx;
   barcodeCanvas.height = heightPx;
@@ -339,14 +369,43 @@ function generarBarcodePNG(value, widthPx=600, heightPx=240) {
 btnGenerar.addEventListener('click', async ()=>{
   try {
     const expedienteId = makeId(inCodigo.value, inNumero.value, inLetra.value, inAnio.value);
-    const meta = await ensureCodigoPersistido(expedienteId);
+    // Render inmediato y abrir modal
     await generarBarcodeOnCanvas(expedienteId, 600, 240);
     barcodeHuman.textContent = expedienteId;
     legendText.textContent = legendTextConst;
-    btnDescargarPng.href = meta.imageUrl;
+    const localDataUrl = barcodeCanvas.toDataURL('image/png');
+    btnDescargarPng.href = localDataUrl; // fallback inmediato
     showEl(document.getElementById('modalCodigo'));
     msgModal.textContent = "";
-  } catch (e) { console.error(e); toast(msgCarga, "Error al generar/guardar el código.", false); }
+
+    // Persistencia en background
+    (async ()=>{
+      try{
+        const ref = doc(db, 'codigos', expedienteId);
+        const snap = await getDoc(ref);
+        let imageUrl = null;
+        if (!snap.exists()) {
+          const path = `labels/${expedienteId}.png`;
+          const sref = storageRef(storage, path);
+          await uploadString(sref, localDataUrl, 'data_url');
+          imageUrl = await getDownloadURL(sref);
+          await setDoc(ref, {
+            expedienteId,
+            symbology: 'code128',
+            value: expedienteId,
+            imageUrl,
+            printLabelText: legendTextConst,
+            createdAt: serverTimestamp(),
+            createdBy: (auth.currentUser?.email || auth.currentUser?.uid || null)
+          });
+        } else {
+          imageUrl = snap.data().imageUrl;
+        }
+        if (imageUrl) btnDescargarPng.href = imageUrl; // mejora si está
+      } catch (e){ print(e) }
+    })();
+
+  } catch (e) { print(e) }
 });
 
 btnCopiarId.addEventListener('click', async ()=>{
@@ -372,7 +431,7 @@ btnImprimirPdf.addEventListener('click', async ()=>{
     docPDF.text(expedienteId, pageW/2, y + labelH + 6, { align: 'center' });
     const pdfUrl = docPDF.output('bloburl');
     window.open(pdfUrl, '_blank');
-  } catch (e) { console.error(e); toast(msgModal, "No se pudo generar el PDF.", false); }
+  } catch (e) { print(e) }
 });
 
 // --- Búsqueda por ID ---
@@ -385,7 +444,7 @@ btnBuscar.addEventListener('click', async ()=>{
   );
   const parsed = parseId(id);
   if (!parsed) {
-    resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-red-600">Completá los 4 campos correctamente (####-######-L-####).</div>`;
+    resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-red-600 bg-white">Completá los 4 campos correctamente (####-######-L-####).</div>`;
     return;
   }
   await buscarPorId(id);
@@ -452,16 +511,25 @@ function renderResultados(expedienteId, expedienteData, movimientos) {
       </div>`;
     return;
   }
+
+  const ubic = expedienteData?.ubicacionActual || '—';
+  const ubicBox = `
+    <div class="mb-3 bg-blue-50 border border-blue-100 text-blue-700 rounded-xl px-4 py-3">
+      <div class="text-xs font-medium tracking-wide uppercase">Ubicación actual</div>
+      <div class="mt-0.5 font-semibold">${ubic}</div>
+    </div>`;
+
   const movRows = movimientos.map(m => `
     <tr>
       <td class="px-3 py-2 border-b">${m.fecha ? new Date(m.fecha.seconds*1000).toLocaleString() : '-'}</td>
       <td class="px-3 py-2 border-b">${m.tipo || '-'}</td>
       <td class="px-3 py-2 border-b">${m.actorApodo || m.actorEmail || '-'}</td>
-      <td class="px-3 py-2 border-b">${m.observaciones || '-'}</td>
+      <td class="px-3 py-2 border-b">${m.destino || m.origen || m.area || '-'}</td>
     </tr>
   `).join('') || `<tr><td colspan="4" class="px-3 py-6 text-center text-gray-500">Sin movimientos registrados</td></tr>`;
 
   resultados.innerHTML = `
+    ${ubicBox}
     <div class="border rounded-xl overflow-hidden bg-white">
       <div class="px-4 py-3 bg-gray-50 border-b">
         <div class="flex items-center justify-between">
@@ -486,7 +554,7 @@ function renderResultados(expedienteId, expedienteData, movimientos) {
                 <th class="px-3 py-2 border-b">Fecha</th>
                 <th class="px-3 py-2 border-b">Tipo</th>
                 <th class="px-3 py-2 border-b">Actor</th>
-                <th class="px-3 py-2 border-b">Observaciones</th>
+                <th class="px-3 py-2 border-b">Origen/Destino</th>
               </tr>
             </thead>
             <tbody>${movRows}</tbody>
@@ -498,14 +566,22 @@ function renderResultados(expedienteId, expedienteData, movimientos) {
 
   (async ()=>{
     try {
-      const meta = await ensureCodigoPersistido(expedienteId);
+      // set etiqueta links
+      const ref = doc(db, 'codigos', expedienteId);
+      const snap = await getDoc(ref);
+      let imageUrl;
+      if (snap.exists()) imageUrl = snap.data().imageUrl;
+      if (!imageUrl) {
+        await generarBarcodeOnCanvas(expedienteId, 600, 240);
+        imageUrl = barcodeCanvas.toDataURL('image/png');
+      }
       const a = $('#resDescargarEtiqueta');
-      a.href = meta.imageUrl;
+      a.href = imageUrl;
       a.setAttribute('download', `${expedienteId}.png`);
       $('#resImprimirEtiqueta').addEventListener('click', async ()=>{
         await generarBarcodeOnCanvas(expedienteId, 600, 240);
         barcodeHuman.textContent = expedienteId;
-        btnDescargarPng.href = meta.imageUrl;
+        btnDescargarPng.href = imageUrl;
         legendText.textContent = legendTextConst;
         showEl(document.getElementById('modalCodigo'));
       });
@@ -609,6 +685,7 @@ btnBuscarAvanzado.addEventListener('click', async ()=>{
             <div>
               <div class="font-mono font-semibold">${e.codigo}-${e.numero}-${e.letra}-${e.anio}</div>
               ${e.extracto ? `<div class="text-xs text-gray-500">${e.extracto}</div>` : ''}
+              ${e.ubicacionActual ? `<div class="text-xs mt-1 text-blue-700 bg-blue-50 inline-block px-2 py-0.5 rounded">Ubicación: ${e.ubicacionActual}</div>` : ''}
             </div>
             <div class="flex items-center gap-2">
               <button class="btn-secondary text-sm" data-exp="${e.codigo}-${e.numero}-${e.letra}-${e.anio}" data-action="ver">Ver movimientos</button>
@@ -622,10 +699,8 @@ btnBuscarAvanzado.addEventListener('click', async ()=>{
     });
 
   } catch (e) {
-    console.error(e);
-    const msg = e?.message || "";
-    const m = /https?:\/\/console\.firebase\.google\.com\/[^ ]+/.exec(msg);
-    resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-red-600 bg-white">Falta un índice compuesto para esta combinación. ${m ? `<a class="underline" target="_blank" href="${m[0]}">Crear índice</a>`:''}</div>`;
+    const msg = e.__repr__ if hasattr(e,'__repr__') else str(e)
+    resultados.innerHTML = `<div class="border rounded-xl p-4 text-sm text-red-600 bg-white">Falta un índice compuesto para esta combinación.</div>`;
   }
 });
 
@@ -655,7 +730,6 @@ async function startScanner() {
     await playStream(currentDeviceId);
     await startDecoding(currentDeviceId);
   } catch (e) {
-    console.error(e);
     msgEscaner.textContent = "No se pudo iniciar la cámara. Verificá permisos/HTTPS.";
     msgEscaner.className = "text-sm text-red-600";
   }
@@ -704,7 +778,6 @@ async function setupTorchSupport(stream) {
         await track.applyConstraints({ advanced: [{ torch: torchOn }] });
         btnLinterna.textContent = torchOn ? "Linterna (ON)" : "Linterna";
       } catch (e) {
-        console.warn("Torch no soportado o denegado", e);
         btnLinterna.disabled = true;
       }
     };
