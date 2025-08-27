@@ -1,0 +1,58 @@
+/* Reusables */
+.input {
+  @apply w-full rounded-lg border border-gray-300 bg-white text-gray-900
+         focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+         dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 dark:focus:ring-blue-400;
+  padding: 0.55rem 0.75rem;
+}
+.input--sm { padding: 0.4rem 0.6rem; }
+
+.label { @apply block text-sm font-medium mb-1; }
+.hint { @apply mt-1 text-xs text-gray-400 dark:text-gray-500; }
+
+.btn-primary {
+  @apply px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed;
+}
+.btn-secondary {
+  @apply px-4 py-2 rounded-lg border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-800 transition;
+}
+.icon-btn {
+  @apply p-2 rounded-lg border bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-800;
+}
+
+.card { @apply bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800; }
+.card-head { @apply px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800; }
+.card-body { @apply p-4 sm:p-6; }
+.title { @apply text-lg font-medium flex items-center gap-2; }
+.sub { @apply text-gray-400 text-sm; }
+
+.tab {
+  @apply px-4 py-2 rounded-full border transition focus:outline-none
+         bg-white text-gray-700 border-gray-200 hover:border-blue-400
+         dark:bg-gray-900 dark:text-gray-100 dark:border-gray-800;
+}
+.tab[data-active="true"] { @apply bg-blue-600 text-white border-blue-600; }
+
+/* Modals */
+.modal { @apply fixed inset-0 z-50; }
+.modal-backdrop { @apply absolute inset-0 bg-black/50; }
+.modal-card {
+  @apply relative max-w-xl mx-auto mt-20 bg-white dark:bg-gray-900 rounded-2xl shadow-lg;
+  animation: fade .18s ease-out;
+}
+.modal-wide { @apply max-w-3xl mt-10; }
+.modal-head { @apply px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between; }
+.modal-close { @apply text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200; }
+
+/* Effects */
+@keyframes fade { from { opacity: 0; transform: scale(.98) } to { opacity: 1; transform: scale(1) } }
+
+/* Scan overlay */
+.scan-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 15%;
+  border: 2px dashed rgba(255,255,255,.8);
+  border-radius: .75rem;
+  pointer-events: none;
+}
