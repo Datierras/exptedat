@@ -1,5 +1,4 @@
 // Core App (v3): primary Guardar Movimiento, soft Generar Código, Destino/Origen, ubicacionActual, glass modals
-import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@latest/+esm';
 import { firebaseConfig } from './config.js';
 
 import {
@@ -16,6 +15,21 @@ import {
   getStorage, ref as storageRef, uploadString, getDownloadURL
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js';
 
+
+// --- ZXing (lazy) ---
+let __ZXingReaderClass = null;
+async function getZXingReaderClass() {
+  if (!__ZXingReaderClass) {
+    try {
+      const mod = await import('https://cdn.jsdelivr.net/npm/@zxing/browser@latest/+esm');
+      __ZXingReaderClass = mod.BrowserMultiFormatReader;
+    } catch (e) {
+      console.error("No se pudo cargar ZXing:", e);
+      throw new Error("No se pudo cargar el lector de código de barras (ZXing). Verifica tu conexión o el bloqueo de CDN.");
+    }
+  }
+  return __ZXingReaderClass;
+}
 // --- Init Firebase ---
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -221,7 +235,21 @@ btnLogin.addEventListener('click', async ()=>{
     await signInWithEmailAndPassword(auth, email, pass);
   } catch (e) {
     console.error(e);
-    loginMsg.textContent = "No se pudo iniciar sesión.";
+    let msg = "No se pudo iniciar sesión.";
+    if (e && e.code) {
+      const map = {
+        "auth/invalid-email": "Email inválido.",
+        "auth/missing-password": "Falta la contraseña.",
+        "auth/invalid-credential": "Usuario o contraseña incorrectos.",
+        "auth/user-not-found": "Usuario no encontrado.",
+        "auth/wrong-password": "Contraseña incorrecta.",
+        "auth/too-many-requests": "Demasiados intentos. Esperá unos minutos.",
+        "auth/operation-not-allowed": "Proveedor deshabilitado en Firebase Auth (ver Email/Password).",
+        "auth/unauthorized-domain": "Dominio no autorizado en Firebase Auth. Agregá tu dominio de GitHub Pages en la consola de Firebase > Authentication > Settings > Authorized domains."
+      };
+      msg = map[e.code] || (e.message || msg);
+    }
+    loginMsg.textContent = msg;
     loginMsg.className = "text-sm text-red-600 h-5";
   }
 });
@@ -725,7 +753,7 @@ async function listCameras() {
 
 async function startScanner() {
   try {
-    codeReader = new BrowserMultiFormatReader();
+    codeReader = new (await getZXingReaderClass())();
     await listCameras();
     await playStream(currentDeviceId);
     await startDecoding(currentDeviceId);
