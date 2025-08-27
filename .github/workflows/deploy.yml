@@ -21,39 +21,17 @@ jobs:
         with:
           node-version: 20
 
-      - name: Locate build folder
-        id: locate
-        run: |
-          if [ -d "build" ]; then
-            echo "dir=build" >> $GITHUB_OUTPUT
-          elif [ -d "expedientes-app-v3/build" ]; then
-            echo "dir=expedientes-app-v3/build" >> $GITHUB_OUTPUT
-          else
-            echo "ERROR: No se encuentra la carpeta 'build'." >&2
-            exit 1
-          fi
-          echo "Build dir: ${{ steps.locate.outputs.dir }}"
-
       - name: Install deps
-        working-directory: ${{ steps.locate.outputs.dir }}
+        working-directory: expedientes-app-v3/build
         run: npm ci || npm i
 
-      - name: Build Tailwind (styles.tailwind.css)
-        working-directory: ${{ steps.locate.outputs.dir }}
+      - name: Build Tailwind
+        working-directory: expedientes-app-v3/build
         run: npm run build
 
       - name: Move artifact
         run: |
-          # Copia el CSS generado a la raíz del repositorio
-          if [ -f "styles.tailwind.css" ]; then
-            cp styles.tailwind.css ./
-          elif [ -f "build/styles.tailwind.css" ]; then
-            cp build/styles.tailwind.css ./
-          elif [ -f "expedientes-app-v3/styles.tailwind.css" ]; then
-            cp expedientes-app-v3/styles.tailwind.css ./
-          else
-            echo "styles.tailwind.css no encontrado — continuaré igualmente."
-          fi
+          cp expedientes-app-v3/styles.tailwind.css ./styles.tailwind.css || true
           mkdir -p dist
           rsync -a --exclude '.git' --exclude 'node_modules' ./ ./dist/
 
