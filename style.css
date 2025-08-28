@@ -286,7 +286,16 @@ button[type="submit"]:disabled {
   font-size: 0.9rem;
   margin: 6px 0 0 0;
 }
-
+.latest-badge {
+  display: inline-block;
+  background: #007aff;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 10px;
+  margin-bottom: 6px;
+}
 
 /* --- Glassmorphism y Modales --- */
 .glass-panel {
@@ -425,5 +434,6 @@ button[type="submit"]:disabled {
     }
 
 }
+
 
 
