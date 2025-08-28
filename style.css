@@ -358,13 +358,18 @@ button[type="submit"]:disabled {
 /* --- Scanner Modal Específico --- */
 #scanner-modal video {
     width: 100%;
+    max-height: 60vh;       /* limita altura en móviles */
+    object-fit: cover;      /* recorta manteniendo proporción */
     border-radius: 12px;
     margin-bottom: 16px;
+    background: #000;       /* por si la cámara tarda en encender */
 }
+
 #scanner-modal .camera-select {
     width: 100%;
     margin-bottom: 16px;
 }
+
 
 
 /* --- Label Modal Específico --- */
@@ -423,3 +428,4 @@ button[type="submit"]:disabled {
     }
 
 }
+
