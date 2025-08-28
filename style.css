@@ -266,7 +266,7 @@ button[type="submit"]:disabled {
 }
 
 
-/* Resultados de búsqueda */
+/* Resultados de /* Resultados de búsqueda */
 #search-results .result-item {
   padding: 12px 14px;
   border-radius: 12px;
@@ -288,6 +288,7 @@ button[type="submit"]:disabled {
   font-size: 0.9rem;
   margin: 6px 0 0 0;
 }
+
 .latest-badge {
   display: inline-block;
   background: #007aff;
@@ -298,6 +299,7 @@ button[type="submit"]:disabled {
   border-radius: 10px;
   margin-bottom: 6px;
 }
+
 
 /* --- Glassmorphism y Modales --- */
 .glass-panel {
@@ -436,6 +438,7 @@ button[type="submit"]:disabled {
     }
 
 }
+
 
 
 
