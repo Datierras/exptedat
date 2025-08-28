@@ -1,1 +1,424 @@
-body{font-family:sans-serif;}
+/* style.css */
+
+:root {
+    --bg-color: #f0f2f5;
+    --primary-blue: #007aff;
+    --text-color: #1d1d1f;
+    --secondary-text-color: #6e6e73;
+    --border-color: #d1d1d6;
+    --glass-bg: rgba(255, 255, 255, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --error-color: #ff3b30;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+}
+
+/* --- Contenedor de Autenticación --- */
+#auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.login-card {
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    padding: 40px 30px;
+}
+
+.login-card h2 {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.login-card p {
+    color: var(--secondary-text-color);
+    margin-bottom: 24px;
+}
+
+#login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.error-message {
+    color: var(--error-color);
+    margin-top: 12px;
+    font-size: 14px;
+    min-height: 20px;
+}
+
+
+/* --- App Principal --- */
+#app-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.topbar h1 {
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+}
+
+.tabs {
+    display: flex;
+    background-color: #e5e5ea;
+    padding: 4px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    background-color: var(--primary-blue);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+}
+
+.tab-btn:not(.active) {
+    background-color: transparent;
+    color: var(--text-color);
+}
+
+.content-section {
+    padding-top: 10px;
+}
+
+
+/* --- Formularios y Controles --- */
+.main-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 16px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+select,
+textarea {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background-color: #f9f9f9;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+textarea {
+    resize: vertical;
+}
+
+select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.7rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+}
+
+.radio-group {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    padding: 10px;
+}
+.radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button {
+    padding: 14px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+button[type="submit"], .action-buttons button:first-of-type {
+    background-color: var(--primary-blue);
+    color: white;
+}
+button[type="submit"]:disabled {
+    background-color: #a0c3e8;
+    cursor: not-allowed;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.action-buttons button {
+    flex-grow: 1;
+}
+
+.action-buttons button:not(:first-of-type) {
+    background-color: #e5e5ea;
+    color: var(--text-color);
+}
+
+/* Custom Dropdown (Nomenclatura) */
+.custom-dropdown .dropdown-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px;
+    font-size: 16px;
+    border: 1px solid var(--primary-blue);
+    color: var(--primary-blue);
+    background-color: transparent;
+    border-radius: 12px;
+    text-align: left;
+    font-weight: 500;
+}
+.custom-dropdown .arrow {
+    transition: transform 0.3s ease;
+}
+.custom-dropdown.open .arrow {
+    transform: rotate(90deg);
+}
+.custom-dropdown .dropdown-content {
+    display: none;
+    padding: 16px;
+    margin-top: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background-color: #fff;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.custom-dropdown:not(.open) .dropdown-content {
+    display: none;
+}
+
+
+/* --- Resultados de Búsqueda --- */
+.results-container {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.result-item {
+    background-color: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+.result-item strong {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 8px;
+}
+.result-item p {
+    color: var(--secondary-text-color);
+    font-size: 14px;
+    margin: 2px 0;
+}
+
+
+/* --- Glassmorphism y Modales --- */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px 0 var(--shadow-color);
+}
+
+#modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#modal-overlay:not(.hidden) {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    width: 90%;
+    max-width: 500px;
+    padding: 24px;
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+}
+
+#modal-overlay:not(.hidden) .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.modal-actions button {
+    flex: 1;
+}
+
+.modal-actions button:last-child {
+    background-color: #e5e5ea;
+    color: var(--text-color);
+}
+
+
+/* --- Scanner Modal Específico --- */
+#scanner-modal video {
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+#scanner-modal .camera-select {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+
+/* --- Label Modal Específico --- */
+#label-content {
+    text-align: center;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px dashed var(--border-color);
+}
+#label-id-text {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+#barcode {
+    max-width: 100%;
+    height: auto;
+}
+
+
+/* --- Botón Salir y Clases de utilidad --- */
+.logout-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #e5e5ea;
+    color: var(--text-color);
+    padding: 10px 16px;
+    z-index: 999;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* --- Responsividad --- */
+@media (max-width: 600px) {
+    .topbar h1 {
+        font-size: 24px;
+    }
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    .custom-dropdown .dropdown-content {
+        grid-template-columns: 1fr;
+    }
+    .action-buttons {
+        flex-direction: column;
+    }
+    #app-container, #auth-container {
+        padding: 15px;
+    }
+    .modal-content {
+        width: 95%;
+    }
+}
