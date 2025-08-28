@@ -318,45 +318,21 @@ clearSearchBtn.addEventListener('click', () => {
 
 // --- NUEVO: formateador de fecha para mostrar createdAt ---
 function formatDate(ts) {
-  // --- render con fecha y destacado del último movimiento ---
-function renderSearchResults(querySnapshot) {
-  if (querySnapshot.empty) {
-    searchResultsContainer.innerHTML = '<p>No se encontraron expedientes.</p>';
-    return;
-  }
+  // Acepta Timestamp de Firestore o Date/number
+  const d = ts && typeof ts.toDate === 'function' ? ts.toDate() : new Date(ts);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
 
-  // Los docs vienen ordenados DESC por createdAt → el primero es el más reciente
-  searchResultsContainer.innerHTML = '';
-  let i = 0;
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12 || 12;
 
-  querySnapshot.forEach(doc => {
-    const data = doc.data();
-    const idCompleto = `${data.codigo}-${data.numero}-${data.letra}-${data.anio}`;
-    const fecha = data.createdAt ? formatDate(data.createdAt) : '—';
-
-    const item = document.createElement('div');
-    item.className = 'result-item' + (i === 0 ? ' latest' : '');
-
-    // Debug: verificamos que se aplique la clase y que haya fecha
-    console.log('[render] idx=', i, 'latest?', i===0, 'createdAt=', data.createdAt);
-
-    item.innerHTML = `
-      ${i === 0 ? '<span class="latest-badge">Último movimiento</span>' : ''}
-      <strong>ID: ${idCompleto}</strong>
-      <p class="meta"><strong>Fecha:</strong> ${fecha}</p>
-      <p><strong>Extracto:</strong> ${data.extracto || ''}</p>
-      <p><strong>Oficina:</strong> ${data.oficina || ''}</p>
-      <p><strong>Movimiento:</strong> ${data.movimiento || ''}</p>
-      <p><strong>Autor:</strong> ${data.autor || ''}</p>
-    `;
-
-    searchResultsContainer.appendChild(item);
-    i++;
-  });
+  return `${dd}/${mm}/${yyyy} - ${hours}:${minutes} ${ampm}`;
 }
 
-
-// --- NUEVO: render con fecha y destacado del último movimiento ---
+// --- ÚNICA función renderSearchResults (con fecha + destacado) ---
 function renderSearchResults(querySnapshot) {
   if (querySnapshot.empty) {
     searchResultsContainer.innerHTML = '<p>No se encontraron expedientes.</p>';
@@ -390,28 +366,6 @@ function renderSearchResults(querySnapshot) {
   });
 }
 
-
-function renderSearchResults(querySnapshot) {
-  if (querySnapshot.empty) {
-    searchResultsContainer.innerHTML = '<p>No se encontraron expedientes.</p>';
-    return;
-  }
-  searchResultsContainer.innerHTML = '';
-  querySnapshot.forEach(doc => {
-    const data = doc.data();
-    const idCompleto = `${data.codigo}-${data.numero}-${data.letra}-${data.anio}`;
-    const item = document.createElement('div');
-    item.className = 'result-item';
-    item.innerHTML = `
-      <strong>ID: ${idCompleto}</strong>
-      <p><strong>Extracto:</strong> ${data.extracto}</p>
-      <p><strong>Oficina:</strong> ${data.oficina}</p>
-      <p><strong>Movimiento:</strong> ${data.movimiento}</p>
-      <p><strong>Autor:</strong> ${data.autor}</p>
-    `;
-    searchResultsContainer.appendChild(item);
-  });
-}
 
 // --- Escáner (móvil robusto: permiso previo + trasera + fallback) ---
 // Utilidad: detener tracks de un <video>
@@ -587,6 +541,7 @@ $$('.close-modal-btn').forEach(btn => {
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
+
 
 
 
