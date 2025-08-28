@@ -1,293 +1,171 @@
 <!DOCTYPE html>
-<html lang="es" class="h-full">
+<html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  \1  <link rel="stylesheet" href="./styles.tailwind.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gestión de Expedientes</title>
   <link rel="stylesheet" href="./style.css" />
-\1
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="./styles.tailwind.css" />
-<!-- JsBarcode (Code128) -->
+  <!-- Libs (solo cuando se usan, no bloquea el login): -->
   <script defer src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-  <!-- jsPDF (PDF en mm) -->
   <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
-<body class="h-full bg-gray-50 text-gray-900" style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-  <!-- Login Screen -->
-  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
-    <div class="auth-card">
-      <h1 class="text-xl font-semibold text-center">Iniciar sesión</h1>
-      <div class="space-y-2">
-        <label for="loginEmail" class="block text-sm text-gray-600">Email</label>
-        <input id="loginEmail" type="email" class="input" placeholder="usuario@coord.com" autocomplete="username" />
+<body>
+  <!-- Pantalla de Login -->
+  <section id="loginScreen" class="screen login">
+    <div class="card auth-card">
+      <h1 class="title">Iniciar sesión</h1>
+      <p class="muted">Acceso con email y contraseña</p>
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input id="loginEmail" type="email" placeholder="usuario@dominio.com" autocomplete="username" />
       </div>
-      <div class="space-y-2">
-        <label for="loginPass" class="block text-sm text-gray-600">Contraseña</label>
-        <input id="loginPass" type="password" class="input" placeholder="********" autocomplete="current-password" />
+      <div class="field">
+        <label for="loginPass">Contraseña</label>
+        <input id="loginPass" type="password" placeholder="********" autocomplete="current-password" />
       </div>
-      <button id="btnLogin" class="btn-primary w-full">Entrar</button>
-      <p id="loginMsg" class="text-sm h-5 text-center"></p>
+      <button id="btnLogin" class="btn btn-primary w-full">Entrar</button>
+      <div id="loginMsg" class="msg"></div>
     </div>
-  </div>
+  </section>
 
-  <!-- App UI -->
-  <div id="appRoot" class="hidden hidden min-h-screen">
-    <div class="max-w-6xl mx-auto p-4 sm:p-6">
-      <!-- Topbar -->
-      <header class="mb-4 sm:mb-6 flex items-center gap-3">
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight">Gestión de Expedientes</h1>
-          <p class="text-sm text-gray-500">Cargar expedientes, generar etiquetas y buscar movimientos.</p>
-        </div>
-        <div class="ml-auto flex items-center gap-2">
-          <button id="btnConfig" class="icon-btn" title="Configuración" aria-label="Configuración">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.54-.94 3.31.83 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.54-.83 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.54.94-3.31-.83-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.54.83-3.31 2.37-2.37.943.576 2.146.146 2.573-1.066z" />
-              <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
-          <button id="btnLogout" class="icon-btn" title="Cerrar sesión" aria-label="Cerrar sesión">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-              <path d="M16 17l5-5-5-5" /><path d="M21 12H9" />
-            </svg>
-          </button>
-        </div>
-      </header>
+  <!-- App -->
+  <main id="appRoot" class="app hidden">
+    <header class="topbar card glass">
+      <div class="brand">
+        <h1>Gestión de Expedientes</h1>
+        <p class="muted">Cargar, etiquar y buscar expedientes</p>
+      </div>
+      <div class="actions">
+        <button id="btnConfig" class="btn">⚙️</button>
+        <button id="btnLogout" class="btn btn-secondary">Salir</button>
+      </div>
+    </header>
 
-      <!-- Tabs -->
-      <div class="flex items-center gap-2 mb-4">
-        <button id="tabBtnCarga" class="tab" data-active="true">CARGA</button>
-        <button id="tabBtnBusqueda" class="tab" data-active="false">BÚSQUEDA</button>
+    <nav class="tabs card glass">
+      <button id="tabBtnCarga"   class="pill active">CARGA</button>
+      <button id="tabBtnBusqueda" class="pill">BÚSQUEDA</button>
+    </nav>
+
+    <!-- Panel: CARGA -->
+    <section id="panelCarga" class="panel card glass">
+      <h2 class="panel-title">Cargar expediente</h2>
+      <div class="grid-2">
+        <div class="field"><label for="inCodigo">Código</label><input id="inCodigo" type="text" placeholder="4078" /></div>
+        <div class="field"><label for="inNumero">Número</label><input id="inNumero" type="text" placeholder="123456" /></div>
+        <div class="field"><label for="inLetra">Letra</label><input id="inLetra" type="text" maxlength="1" placeholder="I" /></div>
+        <div class="field"><label for="inAnio">Año</label><input id="inAnio" type="text" placeholder="2025" /></div>
+      </div>
+      <div class="field"><label for="inExtracto">Extracto</label><input id="inExtracto" type="text" placeholder="Descripción breve" /></div>
+
+      <details class="details">
+        <summary>Nomenclatura</summary>
+        <div class="grid-2">
+          <div class="field"><label for="inCirc">Circunscripción</label><input id="inCirc" type="text" /></div>
+          <div class="field"><label for="inSec">Sección</label><input id="inSec" type="text" /></div>
+          <div class="field"><label for="inChacra">Chacra</label><input id="inChacra" type="text" /></div>
+          <div class="field"><label for="inLch">L. CH.</label><input id="inLch" type="text" /></div>
+          <div class="field"><label for="inQuinta">Quinta</label><input id="inQuinta" type="text" /></div>
+          <div class="field"><label for="inLq">L. Qt.</label><input id="inLq" type="text" /></div>
+          <div class="field"><label for="inFraccion">Fracción</label><input id="inFraccion" type="text" /></div>
+          <div class="field"><label for="inLf">L. Fr.</label><input id="inLf" type="text" /></div>
+          <div class="field"><label for="inManzana">Manzana</label><input id="inManzana" type="text" /></div>
+          <div class="field"><label for="inLm">L. Mz.</label><input id="inLm" type="text" /></div>
+          <div class="field"><label for="inParcela">Parcela</label><input id="inParcela" type="text" /></div>
+          <div class="field"><label for="inLp">L. Pc.</label><input id="inLp" type="text" /></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><label for="inProv">Partida Provincial</label><input id="inProv" type="text" /></div>
+          <div class="field"><label for="inMun">Partida Municipal</label><input id="inMun" type="text" /></div>
+        </div>
+      </details>
+
+      <div class="row gap">
+        <button id="btnGenerarCodigo" class="btn btn-soft">Generar etiqueta</button>
+        <button id="btnEscaner" class="btn btn-soft">Escanear</button>
+        <button id="btnGuardar" class="btn btn-primary">Guardar expediente</button>
+        <div id="msgGuardar" class="msg"></div>
       </div>
 
-      <!-- Panels -->
-      <main class="space-y-8">
-        <!-- Panel CARGA -->
-        <section id="panelCarga" class="card">
-          <div class="card-head">
-            <h2 class="title">CARGA <span class="sub">· Generar código de barras</span></h2>
-          </div>
-          <div class="card-body">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div>
-                <label class="label" for="inCodigo">Código</label>
-                <input id="inCodigo" type="text" inputmode="numeric" placeholder="4078" class="input" maxlength="4">
-                <p class="hint">4 dígitos</p>
-              </div>
-              <div>
-                <label class="label" for="inNumero">Número</label>
-                <input id="inNumero" type="text" inputmode="numeric" placeholder="111111" class="input" maxlength="6">
-                <p class="hint">6 dígitos</p>
-              </div>
-              <div>
-                <label class="label" for="inLetra">Letra</label>
-                <input id="inLetra" type="text" placeholder="I" class="input" maxlength="1">
-                <p class="hint">1 letra (A–Z)</p>
-              </div>
-              <div>
-                <label class="label" for="inAnio">Año</label>
-                <input id="inAnio" type="text" inputmode="numeric" placeholder="2025" class="input" maxlength="4">
-                <p class="hint">4 dígitos</p>
-              </div>
-              <div class="sm:col-span-2 lg:col-span-5">
-                <label class="label" for="inExtracto">Extracto</label>
-                <input id="inExtracto" type="text" placeholder="Breve descripción del expediente" class="input">
-              </div>
-            </div>
+      <!-- Etiqueta generada -->
+      <div id="etiquetaBox" class="card sub glass hidden">
+        <h3>Etiqueta</h3>
+        <svg id="barcode" role="img" aria-label="Código de barras"></svg>
+        <div class="row gap">
+          <button id="btnImprimirEtiqueta" class="btn">Imprimir</button>
+          <button id="btnPdfEtiqueta" class="btn">PDF</button>
+        </div>
+      </div>
+    </section>
 
-            <!-- Radios Enviamos / Recibimos -->
-            <div class="mt-4 flex flex-wrap items-center gap-6">
-              <span class="label">Movimiento:</span>
-              <label class="inline-flex items-center gap-2">
-                <input type="radio" name="movTipo" id="movEnviamos" value="Enviamos" class="radio" checked />
-                <span>Enviamos</span>
-              </label>
-              <label class="inline-flex items-center gap-2">
-                <input type="radio" name="movTipo" id="movRecibimos" value="Recibimos" class="radio" />
-                <span>Recibimos</span>
-              </label>
-            </div>
+    <!-- Panel: BÚSQUEDA -->
+    <section id="panelBusqueda" class="panel card glass hidden">
+      <h2 class="panel-title">Búsqueda</h2>
+      <div class="grid-3">
+        <div class="field"><label for="bId">ID / Código-Numero-Letra-Año</label><input id="bId" type="text" placeholder="4078-123456-I-2025" /></div>
+        <div class="field"><label for="bExtracto">Extracto</label><input id="bExtracto" type="text" placeholder="Palabras clave" /></div>
+        <div class="field"><label for="bArea">Área</label><input id="bArea" type="text" placeholder="Coordinación..." /></div>
+      </div>
+      <div class="row gap">
+        <button id="btnBuscar" class="btn btn-primary">Buscar</button>
+        <button id="btnLimpiar" class="btn btn-secondary">Limpiar</button>
+      </div>
+      <div id="resultados" class="results"></div>
+    </section>
+  </main>
 
-            <!-- Destino / Origen -->
-            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div class="sm:col-span-2 lg:col-span-2">
-                <label class="label" for="selArea"><span id="lblArea">Destino</span></label>
-                <select id="selArea" class="input">
-                  <option value="">Seleccioná destino</option>
-                </select>
-                <p class="hint">Campo obligatorio.</p>
-              </div>
-            </div>
-
-            <!-- Nomenclatura Toggle -->
-            <div class="mt-6 flex flex-col gap-4">
-              <button id="showNomenclaturaBtn" class="btn-secondary w-full">Nomenclatura</button>
-              <div id="nomenclatura-fields" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 hidden">
-                <div class="input-group"><label for="circunscripcion" class="label">Circunscripción</label><input type="number" id="circunscripcion" class="input" min="1" max="7"></div>
-                <div class="input-group"><label for="seccion" class="label">Sección</label><input type="text" id="seccion" class="input" maxlength="2" pattern="[A-Za-z]+"></div>
-                <div class="input-group"><label for="chacra" class="label">Chacra</label><input type="number" id="chacra" class="input" min="0" max="999"></div>
-                <div class="input-group"><label for="letraChacra" class="label">L. CH.</label><input type="text" id="letraChacra" class="input" maxlength="2" pattern="[A-Za-z]+"></div>
-                <div class="input-group"><label for="quinta" class="label">Quinta</label><input type="number" id="quinta" class="input" min="0" max="999"></div>
-                <div class="input-group"><label for="letraQuinta" class="label">L. Qt.</label><input type="text" id="letraQuinta" class="input" maxlength="2" pattern="[A-Za-z]+"></div>
-                <div class="input-group"><label for="fraccion" class="label">Fracción</label><input type="number" id="fraccion" class="input" min="0" max="999"></div>
-                <div class="input-group"><label for="letraFraccion" class="label">L. Fr.</label><input type="text" id="letraFraccion" class="input" maxlength="2" pattern="[A-Za-z]+"></div>
-                <div class="input-group"><label for="manzana" class="label">Manzana</label><input type="number" id="manzana" class="input" min="0" max="999"></div>
-                <div class="input-group"><label for="letraManzana" class="label">L. Mz.</label><input type="text" id="letraManzana" class="input" maxlength="2" pattern="[A-Za-z]+"></div>
-                <div class="input-group"><label for="parcela" class="label">Parcela</label><input type="number" id="parcela" class="input" min="0" max="999"></div>
-                <div class="input-group"><label for="letraParcela" class="label">L. Pc.</label><input type="text" id="letraParcela" class="input" maxlength="2" pattern="[A-Za-z]+"></div>
-                <div class="input-group"><label for="partidaProvincial" class="label">Partida Provincial</label><input type="number" id="partidaProvincial" class="input"></div>
-                <div class="input-group"><label for="partidaMunicipal" class="label">Partida Municipal</label><input type="number" id="partidaMunicipal" class="input"></div>
-              </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="mt-6 flex flex-wrap items-center gap-3">
-              <button id="btnGuardarExpediente" class="btn-primary">Guardar movimiento</button>
-              <button id="btnGenerar" class="btn-soft" disabled>Generar código</button>
-              <span id="msgCarga" class="text-sm"></span>
-            </div>
-          </div>
-        </section>
-
-        <!-- Panel BÚSQUEDA -->
-        <section id="panelBusqueda" class="card hidden">
-          <div class="card-head">
-            <h2 class="title">BÚSQUEDA <span class="sub">· por ID o escaneo</span></h2>
-          </div>
-          <div class="card-body space-y-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div><label class="label" for="bCodigo">Código</label><input id="bCodigo" type="text" inputmode="numeric" class="input" maxlength="4"></div>
-              <div><label class="label" for="bNumero">Número</label><input id="bNumero" type="text" inputmode="numeric" class="input" maxlength="6"></div>
-              <div><label class="label" for="bLetra">Letra</label><input id="bLetra" type="text" class="input" maxlength="1"></div>
-              <div><label class="label" for="bAnio">Año</label><input id="bAnio" type="text" inputmode="numeric" class="input" maxlength="4"></div>
-              <div class="flex items-end gap-2"><button id="btnBuscar" class="btn-primary w-full">Buscar</button></div>
-            </div>
-
-            <div class="flex items-center gap-3">
-              <button id="btnEscanear" class="btn-secondary">Escanear</button>
-              <button id="btnBusqAvanzada" class="btn-secondary">Búsqueda avanzada</button>
-              <input id="usbScanInput" type="text" class="sr-only" aria-hidden="true" />
-              <span class="text-xs text-gray-500">Tip: lector USB escribe aquí en segundo plano; presioná el gatillo y listo.</span>
-            </div>
-
-            <!-- Advanced search form -->
-            <div id="busqAvanzada" class="hidden space-y-4">
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="input-group"><label for="aCircunscripcion" class="label">Circunscripción</label><input type="number" id="aCircunscripcion" class="input" min="1" max="7"></div>
-                <div class="input-group"><label for="aSeccion" class="label">Sección</label><input type="text" id="aSeccion" class="input" maxlength="2" pattern="[A-Za-z]+"></div>
-                <div class="input-group"><label for="aChacra" class="label">Chacra</label><input type="number" id="aChacra" class="input" min="0" max="999"></div>
-                <div class="input-group"><label for="aLetraChacra" class="label">L. CH.</label><input type="text" id="aLetraChacra" class="input" maxlength="2"></div>
-                <div class="input-group"><label for="aQuinta" class="label">Quinta</label><input type="number" id="aQuinta" class="input" min="0" max="999"></div>
-                <div class="input-group"><label for="aLetraQuinta" class="label">L. Qt.</label><input type="text" id="aLetraQuinta" class="input" maxlength="2"></div>
-                <div class="input-group"><label for="aFraccion" class="label">Fracción</label><input type="number" id="aFraccion" class="input" min="0" max="999"></div>
-                <div class="input-group"><label for="aLetraFraccion" class="label">L. Fr.</label><input type="text" id="aLetraFraccion" class="input" maxlength="2"></div>
-                <div class="input-group"><label for="aManzana" class="label">Manzana</label><input type="number" id="aManzana" class="input" min="0" max="999"></div>
-                <div class="input-group"><label for="aLetraManzana" class="label">L. Mz.</label><input type="text" id="aLetraManzana" class="input" maxlength="2"></div>
-                <div class="input-group"><label for="aParcela" class="label">Parcela</label><input type="number" id="aParcela" class="input" min="0" max="999"></div>
-                <div class="input-group"><label for="aLetraParcela" class="label">L. Pc.</label><input type="text" id="aLetraParcela" class="input" maxlength="2"></div>
-                <div class="input-group"><label for="aPartidaProvincial" class="label">Partida Provincial</label><input type="number" id="aPartidaProvincial" class="input"></div>
-                <div class="input-group"><label for="aPartidaMunicipal" class="label">Partida Municipal</label><input type="number" id="aPartidaMunicipal" class="input"></div>
-              </div>
-              <div class="flex items-center gap-2">
-                <button id="btnBuscarAvanzado" class="btn-primary">Buscar con filtros</button>
-                <button id="btnLimpiarFiltros" class="btn-secondary">Limpiar filtros</button>
-                <p class="text-xs text-gray-500">Regla: con <b>Partida Municipal</b> o <b>Provincial</b> alcanza con uno; para el resto, mínimo 2 campos.</p>
-              </div>
-            </div>
-
-            <div id="resultados" class="mt-2">
-              <div class="border rounded-xl p-4 text-sm text-gray-500 bg-white">Sin resultados aún.</div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <!-- Footer (autor) -->
-      <footer class="mt-10 mb-2 text-center text-xs text-gray-400 select-none">
-        Sistema realizado por Bottino Cristian - 25618
-      </footer>
-    </div>
-  </div>
-
-  <!-- Modal: Generador/Preview de Código -->
-  <div id="modalCodigo" class="modal hidden">
-    <div class="modal-backdrop glass-backdrop"></div>
-    <div class="modal-card glass-card">
+  <!-- Modal Configuración -->
+  <div id="modalConfig" class="modal hidden">
+    <div class="backdrop" data-close-modal="modalConfig"></div>
+    <div class="modal-card card glass">
       <div class="modal-head">
-        <h3 class="text-lg font-medium">Etiqueta de expediente</h3>
-        <button class="modal-close" data-close-modal="modalConfig" data-close-modal="modalCodigo" aria-label="Cerrar">✕</button>
+        <h3>Configuración</h3>
+        <button class="modal-close" data-close-modal="modalConfig">✕</button>
       </div>
-      <div class="p-5 space-y-4">
-        <div class="text-center">
-          <div id="legendText" class="text-xs text-gray-500 mb-1">Coordinación General de Programa de Tierras y Regularización Dominial</div>
-          <canvas id="barcodeCanvas" class="mx-auto"></canvas>
-          <div id="barcodeHuman" class="mt-1 font-medium tracking-wide"></div>
-        </div>
-        <div class="flex flex-wrap items-center justify-end gap-2">
-          <button id="btnCopiarId" class="btn-secondary text-sm">Copiar ID</button>
-          <a id="btnDescargarPng" download class="btn-secondary text-sm" href="#">Descargar PNG</a>
-          <button id="btnImprimirPdf" class="btn-primary text-sm">Imprimir</button>
-          <button class="btn-secondary text-sm" data-close-modal="modalCodigo">Cerrar</button>
-        </div>
-        <div id="msgModal" class="text-sm"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Escaneo con Cámara -->
-  <div id="modalEscaner" class="modal hidden">
-    <div class="modal-backdrop glass-backdrop"></div>
-    <div class="modal-card modal-wide glass-card">
-      <div class="modal-head">
-        <h3 class="text-lg font-medium">Escanear código de barras</h3>
-        <button class="modal-close" data-close-modal="modalConfig" data-close-modal="modalEscaner" aria-label="Cerrar">✕</button>
-      </div>
-      <div class="p-5 space-y-4">
-        <div class="flex flex-wrap items-center gap-3">
-          <label class="text-sm">Cámara:</label>
-          <select id="selCamaras" class="input input--sm"></select>
-          <button id="btnLinterna" class="btn-secondary text-sm disabled:opacity-50" disabled>Linterna</button>
-        </div>
-
-        <div class="relative rounded-xl overflow-hidden bg-black scan-overlay">
-          <video id="video" class="w-full h-[55vh] object-cover"></video>
-        </div>
-
-        <div class="text-xs text-gray-500">
-          Alineá el código dentro del marco. En algunos dispositivos la linterna puede no estar disponible.
-        </div>
-
-        <div class="flex items-center justify-end gap-2">
-          <button class="btn-secondary text-sm" data-close-modal="modalEscaner">Cerrar</button>
-        </div>
-        <div id="msgEscaner" class="text-sm"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Configuración -->
-  <div id="modalConfig" class="hidden modal hidden">
-    <div class="modal-backdrop glass-backdrop"></div>
-    <div class="modal-card glass-card">
-      <div class="modal-head">
-        <h3 class="text-lg font-medium">Configuración</h3>
-        <button class="modal-close" data-close-modal="modalConfig" data-close-modal="modalConfig" aria-label="Cerrar">✕</button>
-      </div>
-      <div class="p-5 space-y-4 text-sm">
-        <div class="space-y-2">
-          <label for="confApodo" class="label">Apodo para registrar movimientos</label>
-          <input id="confApodo" type="text" class="input" placeholder="12345 Apellido" />
+      <div class="modal-body">
+        <div class="field">
+          <label for="confApodo">Apodo para registrar movimientos</label>
+          <input id="confApodo" type="text" placeholder="12345 Apellido" />
           <p class="hint">Se mostrará como autor en tus nuevos movimientos.</p>
-          <div class="flex items-center gap-2"><button id="btnGuardarApodo" class="btn-primary">Guardar apodo</button><span id="msgApodo" class="text-sm"></span></div>
         </div>
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200">
-          <button class="btn-secondary" data-close-modal="modalConfig">Cerrar</button>
-        </div>
+        <div id="msgApodo" class="msg"></div>
+      </div>
+      <div class="modal-foot">
+        <button id="btnGuardarApodo" class="btn btn-primary">Guardar</button>
+        <button class="btn btn-secondary" data-close-modal="modalConfig">Cerrar</button>
       </div>
     </div>
   </div>
 
+  <!-- Modal Escaner -->
+  <div id="modalEscaner" class="modal hidden">
+    <div class="backdrop" data-close-modal="modalEscaner"></div>
+    <div class="modal-card card glass">
+      <div class="modal-head">
+        <h3>Escáner de código</h3>
+        <button class="modal-close" data-close-modal="modalEscaner">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label for="selCamaras">Cámara</label>
+          <select id="selCamaras"></select>
+        </div>
+        <video id="previewVideo" playsinline muted class="video"></video>
+        <p class="hint">Apuntá el código al centro. En algunos dispositivos la linterna puede no estar disponible.</p>
+        <div id="msgEscaner" class="msg"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" data-close-modal="modalEscaner">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config Firebase -->
+  <script type="module" src="./config.js"></script>
+  <!-- App -->
   <script type="module" src="./app.js"></script>
 </body>
 </html>
