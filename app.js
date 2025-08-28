@@ -1,15 +1,11 @@
-// app.js
+// app.js (CORREGIDO)
 
 // --- Inicialización de Firebase y Constantes Globales ---
-// Importar funciones de Firebase (estilo compat para usar con los scripts del HTML)
-const { initializeApp } = firebase;
-const { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } = firebase.auth;
-const { getFirestore, collection, addDoc, getDocs, query, where, doc, setDoc, getDoc, Timestamp } = firebase.firestore;
-
-// Inicializar app de Firebase con la configuración de config.js
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Usar la sintaxis v8 compatible con los scripts del HTML
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const Timestamp = firebase.firestore.Timestamp;
 
 // Estado de la aplicación
 const state = {
@@ -68,7 +64,7 @@ const advancedSearchModal = $('#advanced-search-modal');
 const advancedSearchForm = $('#advanced-search-form');
 
 // --- Lógica de Autenticación ---
-onAuthStateChanged(auth, user => {
+auth.onAuthStateChanged(user => {
     if (user) {
         state.currentUser = user;
         authContainer.classList.add('hidden');
@@ -84,19 +80,20 @@ onAuthStateChanged(auth, user => {
 });
 
 loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Esto es lo que no estaba funcionando
     const email = $('#login-email').value;
     const password = $('#login-password').value;
     try {
-        await signInWithEmailAndPassword(auth, email, password);
+        await auth.signInWithEmailAndPassword(email, password);
         authError.textContent = '';
+        loginForm.reset();
     } catch (error) {
         handleAuthError(error);
     }
 });
 
 logoutBtn.addEventListener('click', () => {
-    signOut(auth);
+    auth.signOut();
 });
 
 function handleAuthError(error) {
@@ -120,9 +117,9 @@ function handleAuthError(error) {
 // --- Gestión de Perfil de Usuario (Apodo) ---
 async function loadUserProfile() {
     if (!state.currentUser) return;
-    const userDocRef = doc(db, 'usuarios', state.currentUser.uid);
-    const docSnap = await getDoc(userDocRef);
-    if (docSnap.exists()) {
+    const userDocRef = db.collection('usuarios').doc(state.currentUser.uid);
+    const docSnap = await userDocRef.get();
+    if (docSnap.exists) {
         state.userProfile = docSnap.data();
         userApodoInput.value = state.userProfile.apodo || '';
     }
@@ -131,9 +128,9 @@ async function loadUserProfile() {
 saveSettingsBtn.addEventListener('click', async () => {
     if (!state.currentUser) return;
     const apodo = userApodoInput.value.trim();
-    const userDocRef = doc(db, 'usuarios', state.currentUser.uid);
+    const userDocRef = db.collection('usuarios').doc(state.currentUser.uid);
     try {
-        await setDoc(userDocRef, { apodo }, { merge: true });
+        await userDocRef.set({ apodo }, { merge: true });
         state.userProfile.apodo = apodo;
         alert('Apodo guardado correctamente.');
         closeAllModals();
@@ -206,7 +203,6 @@ expedienteForm.addEventListener('submit', async (e) => {
         }
     };
     
-    // Validar oficina
     if (!expedienteData.oficina) {
         alert("Por favor, selecciona una oficina.");
         saveExpedienteBtn.disabled = false;
@@ -215,7 +211,7 @@ expedienteForm.addEventListener('submit', async (e) => {
     }
 
     try {
-        await addDoc(collection(db, 'expedientes'), expedienteData);
+        await db.collection('expedientes').add(expedienteData);
         alert('Expediente guardado con éxito.');
         expedienteForm.reset();
         dropdown.classList.remove('open');
@@ -282,11 +278,9 @@ pdfLabelBtn.addEventListener('click', () => {
 
     doc.setFontSize(16);
     doc.text('Etiqueta de Expediente', 74, 15, { align: 'center' });
-
     doc.setFontSize(12);
     doc.text(fullId, 74, 25, { align: 'center' });
-
-    // Convertir SVG a data URL y añadirlo al PDF
+    
     const svgData = new XMLSerializer().serializeToString(svgElement);
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -297,7 +291,7 @@ pdfLabelBtn.addEventListener('click', () => {
         ctx.drawImage(img, 0, 0);
         const dataUrl = canvas.toDataURL('image/png');
         
-        const barcodeWidth = 90; // Ancho del código de barras en mm
+        const barcodeWidth = 90;
         const barcodeHeight = (barcodeWidth * img.height) / img.width;
         const x = (148 - barcodeWidth) / 2;
         doc.addImage(dataUrl, 'PNG', x, 40, barcodeWidth, barcodeHeight);
@@ -326,9 +320,7 @@ clearSearchBtn.addEventListener('click', () => {
 
 async function performSearch(isAdvanced = false) {
     searchResultsContainer.innerHTML = '<p>Buscando...</p>';
-    const expedientesRef = collection(db, 'expedientes');
-    let q;
-    let conditions = [];
+    let query = db.collection('expedientes');
 
     if (isAdvanced) {
         const advValues = {
@@ -343,7 +335,7 @@ async function performSearch(isAdvanced = false) {
         };
         for (const key in advValues) {
             if (advValues[key]) {
-                conditions.push(where(key, '==', advValues[key]));
+                query = query.where(key, '==', advValues[key]);
             }
         }
         closeAllModals();
@@ -353,34 +345,24 @@ async function performSearch(isAdvanced = false) {
         if (id) {
             const parts = id.split('-');
             if (parts.length === 4) {
-                conditions.push(where('codigo', '==', parts[0]));
-                conditions.push(where('numero', '==', parts[1]));
-                conditions.push(where('letra', '==', parts[2]));
-                conditions.push(where('anio', '==', parts[3]));
+                query = query.where('codigo', '==', parts[0])
+                             .where('numero', '==', parts[1])
+                             .where('letra', '==', parts[2])
+                             .where('anio', '==', parts[3]);
             }
         }
         if (extracto) {
-            // Firestore no soporta búsqueda de texto parcial nativamente
-            // Esta es una limitación. Para búsqueda real, se necesita un servicio como Algolia.
-            // Por ahora, buscaremos coincidencias exactas o usaremos >= y <= para prefijos.
-             conditions.push(where("extracto", ">=", extracto));
-             conditions.push(where("extracto", "<=", extracto + '\uf8ff'));
+             query = query.where("extracto", ">=", extracto)
+                          .where("extracto", "<=", extracto + '\uf8ff');
         }
     }
 
-    if (conditions.length === 0) {
-        searchResultsContainer.innerHTML = '<p>Ingresa al menos un criterio de búsqueda.</p>';
-        return;
-    }
-    
-    q = query(expedientesRef, ...conditions);
-
     try {
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await query.get();
         renderSearchResults(querySnapshot);
     } catch (error) {
         console.error("Error en la búsqueda:", error);
-        searchResultsContainer.innerHTML = '<p class="error-message">Error al realizar la búsqueda. Es posible que necesites crear un índice en Firestore.</p>';
+        searchResultsContainer.innerHTML = `<p class="error-message">Error al buscar. Es posible que necesites crear un índice compuesto en Firestore. Revisa la consola de errores del navegador (F12) para ver el link de creación del índice.</p>`;
     }
 }
 
@@ -413,7 +395,6 @@ async function initScanner(mode) {
     openModal(scannerModal);
 
     try {
-        // Importar ZXing dinámicamente
         const ZXing = await import('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm');
         state.scanner = new ZXing.BrowserMultiFormatReader();
         
@@ -435,14 +416,14 @@ async function initScanner(mode) {
 }
 
 function startScan() {
+    if (!state.scanner) return;
     const selectedDeviceId = cameraSelect.value;
     state.scanner.decodeFromVideoDevice(selectedDeviceId, scannerVideo, (result, err) => {
         if (result) {
             handleScanResult(result.getText());
         }
-        if (err && !(err instanceof ZXing.NotFoundException)) {
+        if (err && !(err.constructor.name === 'NotFoundException')) {
             console.error(err);
-            $('#scanner-feedback').textContent = "Error de escaneo.";
         }
     });
 }
@@ -450,7 +431,7 @@ function startScan() {
 function handleScanResult(text) {
     stopScanner();
     const parts = text.split('-');
-    if (parts.length === 4) { // Formato esperado: CODIGO-NUMERO-LETRA-ANIO
+    if (parts.length === 4) {
         if (state.scannerMode === 'carga') {
             $('#carga-codigo').value = parts[0];
             $('#carga-numero').value = parts[1];
@@ -487,7 +468,8 @@ function closeAllModals() {
     modalOverlay.classList.add('hidden');
     allModals.forEach(modal => modal.classList.add('hidden'));
     if (state.scanner) {
-        stopScanner();
+        state.scanner.reset();
+        scannerVideo.srcObject = null;
     }
 }
 
