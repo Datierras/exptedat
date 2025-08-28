@@ -416,7 +416,7 @@ function renderSearchResults(querySnapshot) {
     return;
   }
 
-  // Ya vienen ordenados DESC por createdAt → el primero es el más reciente
+  // Docs ya vienen DESC por createdAt → primero = último movimiento
   searchResultsContainer.innerHTML = '';
   let i = 0;
 
@@ -429,6 +429,7 @@ function renderSearchResults(querySnapshot) {
     item.className = 'result-item' + (i === 0 ? ' latest' : '');
 
     item.innerHTML = `
+      ${i === 0 ? '<span class="latest-badge">Último movimiento</span>' : ''}
       <strong>ID: ${idCompleto}</strong>
       <p class="meta"><strong>Fecha:</strong> ${fecha}</p>
       <p><strong>Extracto:</strong> ${data.extracto || ''}</p>
@@ -639,4 +640,5 @@ $$('.close-modal-btn').forEach(btn => {
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
+
 
