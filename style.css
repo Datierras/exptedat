@@ -267,7 +267,7 @@ button[type="submit"]:disabled {
 
 
 /* Resultados de búsqueda */
-.results-list .result-item {
+#search-results .result-item {
   padding: 12px 14px;
   border-radius: 12px;
   background: rgba(255,255,255,0.6);
@@ -277,11 +277,13 @@ button[type="submit"]:disabled {
 }
 
 /* Último movimiento destacado en celeste */
-.results-list .result-item.latest {
+#search-results .result-item.latest {
   background: rgba(0, 122, 255, 0.08);
   border-left: 4px solid rgba(0, 122, 255, 0.55);
 }
-.results-list .meta {
+
+/* Meta y badge */
+#search-results .meta {
   color: #555;
   font-size: 0.9rem;
   margin: 6px 0 0 0;
@@ -434,6 +436,7 @@ button[type="submit"]:disabled {
     }
 
 }
+
 
 
 
