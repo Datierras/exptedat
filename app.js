@@ -318,96 +318,43 @@ clearSearchBtn.addEventListener('click', () => {
 
 // --- NUEVO: formateador de fecha para mostrar createdAt ---
 function formatDate(ts) {
-  // Acepta Timestamp de Firestore o Date/number
-  const d = ts && typeof ts.toDate === 'function' ? ts.toDate() : new Date(ts);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yyyy = d.getFullYear();
-
-  let hours = d.getHours();
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  const ampm = hours >= 12 ? 'pm' : 'am';
-  hours = hours % 12 || 12;
-
-  return `${dd}/${mm}/${yyyy} - ${hours}:${minutes} ${ampm}`;
-}
-
-// --- NUEVO: búsqueda normal (con campos separados) y avanzada ---
-async function performSearch(isAdvanced = false) {
-  searchResultsContainer.innerHTML = '<p>Buscando...</p>';
-  let query = db.collection('expedientes');
-
-  if (isAdvanced) {
-    // BÚSQUEDA AVANZADA: no es obligatorio "Número"
-    const advValues = {
-      'nomen.circunscripcion': $('#adv-nomen-circ')?.value || '',
-      'nomen.seccion':         $('#adv-nomen-secc')?.value || '',
-      'nomen.chacra':          $('#adv-nomen-chac')?.value || '',
-      'nomen.quinta':          $('#adv-nomen-quin')?.value || '',
-      'nomen.manzana':         $('#adv-nomen-manz')?.value || '',
-      'nomen.parcela':         $('#adv-nomen-parc')?.value || '',
-      'partidas.prov':         $('#adv-part-prov')?.value || '',
-      'partidas.mun':          $('#adv-part-mun')?.value || '',
-    };
-    for (const key in advValues) {
-      const val = advValues[key];
-      if (val) query = query.where(key, '==', val);
-    }
-
-    // Extracto opcional también en avanzada
-    const extracto = $('#search-extracto')?.value.trim();
-    if (extracto) {
-      query = query.where("extracto", ">=", extracto)
-                   .where("extracto", "<=", extracto + '\uf8ff');
-    }
-
-    // Últimos primero
-    query = query.orderBy('createdAt', 'desc');
-    closeAllModals();
-
-  } else {
-    // BÚSQUEDA NORMAL: número OBLIGATORIO
-    const codigo = $('#search-codigo')?.value.trim();
-    const numero = $('#search-numero')?.value.trim();
-    const letra  = ($('#search-letra')?.value || '').trim().toUpperCase();
-    const anio   = $('#search-anio')?.value.trim();
-    const extracto = $('#search-extracto')?.value.trim();
-
-    if (!numero) {
-      searchResultsContainer.innerHTML = `
-        <p class="error-message">
-          Para la búsqueda normal, el campo <strong>Número</strong> es obligatorio.
-          Usá <strong>Búsqueda Avanzada</strong> si no tenés el número.
-        </p>`;
-      return;
-    }
-
-    if (codigo) query = query.where('codigo', '==', codigo);
-    if (numero) query = query.where('numero', '==', numero);
-    if (letra)  query = query.where('letra',  '==', letra);
-    if (anio)   query = query.where('anio',   '==', anio);
-
-    if (extracto) {
-      query = query.where("extracto", ">=", extracto)
-                   .where("extracto", "<=", extracto + '\uf8ff');
-    }
-
-    // Últimos primero
-    query = query.orderBy('createdAt', 'desc');
+  // --- render con fecha y destacado del último movimiento ---
+function renderSearchResults(querySnapshot) {
+  if (querySnapshot.empty) {
+    searchResultsContainer.innerHTML = '<p>No se encontraron expedientes.</p>';
+    return;
   }
 
-  try {
-    const querySnapshot = await query.get();
-    renderSearchResults(querySnapshot);
-  } catch (error) {
-    console.error("Error en la búsqueda:", error);
-    searchResultsContainer.innerHTML = `
-      <p class="error-message">
-        Error al buscar. Es posible que necesites crear un <strong>índice compuesto</strong> en Firestore.
-        Abrí la consola (F12) y seguí el enlace que te da Firestore.
-      </p>`;
-  }
+  // Los docs vienen ordenados DESC por createdAt → el primero es el más reciente
+  searchResultsContainer.innerHTML = '';
+  let i = 0;
+
+  querySnapshot.forEach(doc => {
+    const data = doc.data();
+    const idCompleto = `${data.codigo}-${data.numero}-${data.letra}-${data.anio}`;
+    const fecha = data.createdAt ? formatDate(data.createdAt) : '—';
+
+    const item = document.createElement('div');
+    item.className = 'result-item' + (i === 0 ? ' latest' : '');
+
+    // Debug: verificamos que se aplique la clase y que haya fecha
+    console.log('[render] idx=', i, 'latest?', i===0, 'createdAt=', data.createdAt);
+
+    item.innerHTML = `
+      ${i === 0 ? '<span class="latest-badge">Último movimiento</span>' : ''}
+      <strong>ID: ${idCompleto}</strong>
+      <p class="meta"><strong>Fecha:</strong> ${fecha}</p>
+      <p><strong>Extracto:</strong> ${data.extracto || ''}</p>
+      <p><strong>Oficina:</strong> ${data.oficina || ''}</p>
+      <p><strong>Movimiento:</strong> ${data.movimiento || ''}</p>
+      <p><strong>Autor:</strong> ${data.autor || ''}</p>
+    `;
+
+    searchResultsContainer.appendChild(item);
+    i++;
+  });
 }
+
 
 // --- NUEVO: render con fecha y destacado del último movimiento ---
 function renderSearchResults(querySnapshot) {
@@ -640,5 +587,6 @@ $$('.close-modal-btn').forEach(btn => {
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
+
 
 
