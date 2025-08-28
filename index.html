@@ -98,29 +98,29 @@
             </form>
         </section>
 
-        <section id="busqueda-section" class="content-section hidden">
-           <form id="search-form" class="main-form">
-                 <div class="form-grid">
-                    <input type="text" id="search-codigo" placeholder="Código (ej: 4078)">
-                    <input type="number" id="search-numero" placeholder="Número (obligatorio en búsqueda normal)">
-                    <input type="text" id="search-letra" placeholder="Letra (ej: I)" maxlength="1" oninput="this.value=this.value.toUpperCase()">
-                    <input type="number" id="search-anio" placeholder="Año (ej: 2025)" maxlength="4" oninput="this.value=this.value.slice(0,4)">
-              </div>
+      <section id="busqueda-section" class="content-section hidden">
+  <form id="search-form" class="main-form">
+    <div class="form-grid">
+      <input type="text" id="search-codigo" placeholder="Código (ej: 4078)">
+      <input type="number" id="search-numero" placeholder="Número (obligatorio)">
+      <input type="text" id="search-letra" placeholder="Letra (ej: I)" maxlength="1" oninput="this.value=this.value.toUpperCase()">
+      <input type="number" id="search-anio" placeholder="Año (ej: 2025)" maxlength="4" oninput="this.value=this.value.slice(0,4)">
+    </div>
 
-              <textarea id="search-extracto" placeholder="Extracto (opcional)"></textarea>
+    <textarea id="search-extracto" placeholder="Extracto (opcional)"></textarea>
 
-  <div class="action-buttons">
-    <button type="submit" id="search-btn">Buscar</button>
-    <button type="button" id="clear-search-btn">Limpiar</button>
-    <button type="button" id="advanced-search-btn">Búsqueda Avanzada</button>
-    <button type="button" id="scan-busqueda-btn">Escanear</button>
-  </div>
-</form>
+    <div class="action-buttons">
+      <button type="submit" id="search-btn">Buscar</button>
+      <button type="button" id="clear-search-btn">Limpiar</button>
+      <button type="button" id="advanced-search-btn">Búsqueda Avanzada</button>
+      <button type="button" id="scan-busqueda-btn">Escanear</button>
+    </div>
+  </form>
 
-<div id="search-results" class="results-list"></div>
-
-        </section>
-
+  <!-- Contenedor de resultados con id y clase para que aplique el CSS -->
+  <div id="search-results" class="results-list"></div>
+</section>
+        
     </main>
 
     <div id="modal-overlay" class="hidden">
