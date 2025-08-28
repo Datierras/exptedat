@@ -1,14 +1,14 @@
 // config.js
-// IMPORTANTE: Rellena este objeto con los datos de tu proyecto de Firebase.
-// Para obtenerlos, ve a la Consola de Firebase > Configuración del proyecto > General.
-// Busca la sección "Tus apps" y selecciona la app web que has creado.
-// Haz clic en "SDK de Firebase" > "Config" y copia el objeto.
+// Esta es la configuración de tu proyecto de Firebase.
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
   authDomain: "exptcoord.firebaseapp.com",
   projectId: "exptcoord",
-  storageBucket: "exptcoord.firebasestorage.app",
+  storageBucket: "exptcoord.appspot.com", // Corregí el dominio a .appspot.com, que es el más común.
   messagingSenderId: "416639039117",
   appId: "1:416639039117:web:d9422f6d853a760a3014c4",
 };
+
+// Inicializar Firebase (necesario para el script app.js corregido)
+firebase.initializeApp(firebaseConfig);
