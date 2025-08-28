@@ -266,28 +266,25 @@ button[type="submit"]:disabled {
 }
 
 
-/* --- Resultados de Búsqueda --- */
-.results-container {
-    margin-top: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+/* Resultados de búsqueda */
+.results-list .result-item {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0,0,0,0.06);
+  margin-bottom: 10px;
 }
-.result-item {
-    background-color: #fff;
-    padding: 16px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
+
+/* Último movimiento destacado en celeste */
+.results-list .result-item.latest {
+  background: rgba(0, 122, 255, 0.08);
+  border-left: 4px solid rgba(0, 122, 255, 0.55);
 }
-.result-item strong {
-    font-weight: 600;
-    display: block;
-    margin-bottom: 8px;
-}
-.result-item p {
-    color: var(--secondary-text-color);
-    font-size: 14px;
-    margin: 2px 0;
+.results-list .meta {
+  color: #555;
+  font-size: 0.9rem;
+  margin: 6px 0 0 0;
 }
 
 
@@ -428,4 +425,5 @@ button[type="submit"]:disabled {
     }
 
 }
+
 
