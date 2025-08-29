@@ -481,6 +481,20 @@ function stopMediaTracks(videoEl) {
 }
 
 // Inicializa el escáner y fuerza cámara trasera con fallback
+// --- Escáner (móvil robusto) ---
+let scanLock = false; // evita disparar dos veces
+
+function stopMediaTracks(videoEl) {
+  const stream = videoEl.srcObject;
+  if (stream && stream.getTracks) stream.getTracks().forEach(t => t.stop());
+  videoEl.srcObject = null;
+}
+
+async function listVideoInputs() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  return devices.filter(d => d.kind === 'videoinput');
+}
+
 async function initScanner(mode) {
   state.scannerMode = mode;
   openModal(scannerModal);
@@ -488,102 +502,105 @@ async function initScanner(mode) {
   const feedback = document.getElementById('scanner-feedback');
   if (feedback) feedback.textContent = 'Solicitando acceso a la cámara…';
 
-  // iOS: asegurar playsinline
+  // hint para iOS
   if (scannerVideo) scannerVideo.setAttribute('playsinline', 'true');
 
-  // 1) Pedimos permiso nosotros (trasera ideal) y mostramos stream para evitar "pantalla negra"
-  const constraints = {
-    audio: false,
-    video: { facingMode: { ideal: 'environment' } }
-  };
-
+  // Primero pedimos permiso para que enumerateDevices devuelva labels en iOS
   try {
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: { ideal: 'environment' } }
+    });
     scannerVideo.srcObject = stream;
     try { await scannerVideo.play(); } catch (_) {}
 
     if (feedback) feedback.textContent = 'Inicializando decodificador…';
 
-    // 2) Import ZXing y crear reader
     const ZXing = await import('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm');
     state.scanner = new ZXing.BrowserMultiFormatReader();
 
-    // 3) Con permiso ya otorgado, listar cámaras con labels
-    const devices = await state.scanner.listVideoInputDevices();
+    // Listar cámaras con enumerateDevices (no usar listVideoInputDevices en la instancia)
+    const videoInputs = await listVideoInputs();
     cameraSelect.innerHTML = '';
-
-    devices.forEach((d, i) => {
+    videoInputs.forEach((d, i) => {
       const opt = document.createElement('option');
       opt.value = d.deviceId;
       opt.textContent = d.label || `Cámara ${i + 1}`;
       cameraSelect.appendChild(opt);
     });
 
-    // Heurística: trasera por label; si no hay, usamos la última
-    let preferred = devices.find(d => /back|rear|environment|trase/i.test(d.label));
-    if (!preferred && devices.length) preferred = devices[devices.length - 1];
+    // Elegir trasera si se reconoce, si no la última
+    let preferred = videoInputs.find(d => /back|rear|environment|trase/i.test(d.label));
+    if (!preferred && videoInputs.length) preferred = videoInputs[videoInputs.length - 1];
 
-    // 4) Detener nuestro stream y entregar al lector por deviceId (o constraints)
+    // Reiniciamos stream del video (vamos a dejar que ZXing lo gestione)
     stopMediaTracks(scannerVideo);
 
+    // Arrancar decodificación
+    scanLock = false;
     if (preferred) {
       await startScanWithDevice(preferred.deviceId);
-      if (feedback) feedback.textContent = '';
     } else {
+      // fallback: constraints por facingMode
       await startScanWithConstraints({ audio: false, video: { facingMode: { ideal: 'environment' } } });
-      if (feedback) feedback.textContent = '';
     }
-
+    if (feedback) feedback.textContent = '';
   } catch (err) {
     console.error('getUserMedia error:', err);
     const reason = (err && (err.name || err.message)) ? `${err.name}: ${err.message}` : 'Error desconocido';
-    if (feedback) {
-      feedback.textContent = 'Error al iniciar la cámara. Revisá permisos del navegador para esta página.\n' + reason;
-    }
+    const feedback = document.getElementById('scanner-feedback');
+    if (feedback) feedback.textContent = 'Error al iniciar la cámara. Revisá permisos del navegador para esta página.\n' + reason;
   }
 }
 
-// Cambiar cámara por deviceId
 async function startScanWithDevice(deviceId) {
   const ZXing = await import('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm');
   if (!state.scanner) state.scanner = new ZXing.BrowserMultiFormatReader();
 
+  // Asegurarnos de no dejar streams colgando
   stopMediaTracks(scannerVideo);
+
   await state.scanner.decodeFromVideoDevice(deviceId, scannerVideo, (result, err) => {
-    if (result) handleScanResult(result.getText());
+    if (result && !scanLock) {
+      scanLock = true;
+      handleScanResult(result.getText());
+    }
     if (err && err.constructor && err.constructor.name !== 'NotFoundException') {
+      // Errores de decodificación distintos a "no encontrado" (normales mientras busca)
       console.warn('Decode error:', err);
     }
   });
 }
 
-// Iniciar por constraints (cuando no hay deviceId confiable)
 async function startScanWithConstraints(constraints) {
   const ZXing = await import('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm');
   if (!state.scanner) state.scanner = new ZXing.BrowserMultiFormatReader();
 
   stopMediaTracks(scannerVideo);
+
   await state.scanner.decodeFromConstraints(constraints, scannerVideo, (result, err) => {
-    if (result) handleScanResult(result.getText());
+    if (result && !scanLock) {
+      scanLock = true;
+      handleScanResult(result.getText());
+    }
     if (err && err.constructor && err.constructor.name !== 'NotFoundException') {
       console.warn('Decode error:', err);
     }
   });
 }
 
-// Cambio manual desde el <select>
 async function startScan() {
   const id = cameraSelect.value;
-  if (id) {
-    const fb = document.getElementById('scanner-feedback');
-    try {
-      if (fb) fb.textContent = 'Cambiando de cámara…';
-      await startScanWithDevice(id);
-      if (fb) fb.textContent = '';
-    } catch (e) {
-      console.error(e);
-      if (fb) fb.textContent = 'No se pudo cambiar de cámara.';
-    }
+  if (!id) return;
+  const fb = document.getElementById('scanner-feedback');
+  try {
+    if (fb) fb.textContent = 'Cambiando de cámara…';
+    scanLock = false;
+    await startScanWithDevice(id);
+    if (fb) fb.textContent = '';
+  } catch (e) {
+    console.error(e);
+    if (fb) fb.textContent = 'No se pudo cambiar de cámara.';
   }
 }
 
@@ -597,16 +614,19 @@ function handleScanResult(text) {
       $('#carga-letra').value  = parts[2];
       $('#carga-anio').value   = parts[3];
     } else if (state.scannerMode === 'busqueda') {
-      $('#search-id').value = text;
+      $('#search-codigo').value = parts[0];
+      $('#search-numero').value = parts[1];
+      $('#search-letra').value  = parts[2];
+      $('#search-anio').value   = parts[3];
       performSearch();
     }
   } else {
-    alert("Código no reconocido. Formato esperado: CODIGO-NUMERO-LETRA-ANIO");
+    alert('Código no reconocido. Formato esperado: CODIGO-NUMERO-LETRA-AÑO');
   }
 }
 
 function stopScanner() {
-  try { state.scanner?.reset(); } catch (_) {}
+  try { state.scanner?.reset(); } catch(_) {}
   stopMediaTracks(scannerVideo);
   closeAllModals();
 }
@@ -644,6 +664,7 @@ $$('.close-modal-btn').forEach(btn => {
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
+
 
 
 
