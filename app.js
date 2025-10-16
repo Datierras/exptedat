@@ -159,12 +159,36 @@ auth.onAuthStateChanged(user => {
     appContainer.classList.remove('hidden');
     logoutBtn.classList.remove('hidden');
     loadUserProfile();
+
+    // --- Toggle Modo Noche / Día ---
+    const root = document.documentElement;
+    const themeToggle = document.getElementById('theme-toggle');
+
+    if (themeToggle) {
+      // aplicar tema guardado
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      root.setAttribute('data-theme', savedTheme);
+      themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+      // evitar múltiples bindings si el user reingresa
+      themeToggle.onclick = null;
+      themeToggle.addEventListener('click', () => {
+        const current = root.getAttribute('data-theme') || 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+      });
+    }
   } else {
     state.currentUser = null;
     authContainer.classList.remove('hidden');
     appContainer.classList.add('hidden');
     logoutBtn.classList.add('hidden');
   }
+});
+
+
 });
 
 loginForm.addEventListener('submit', async (e) => {
@@ -768,4 +792,5 @@ $$('.close-modal-btn').forEach(btn => {
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
+
 
