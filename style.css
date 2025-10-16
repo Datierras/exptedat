@@ -276,7 +276,7 @@ button[type="submit"]:disabled {
 }
 
 
-/* Resultados de /* Resultados de búsqueda */
+/* --- Resultados de búsqueda --- */
 #search-results .result-item {
   padding: 12px 14px;
   border-radius: 12px;
@@ -291,6 +291,18 @@ button[type="submit"]:disabled {
   background: rgba(0, 122, 255, 0.08);
   border-left: 4px solid rgba(0, 122, 255, 0.55);
 }
+
+/* --- Colores según estado del expediente --- */
+#search-results .result-item.recibimos {
+  background: rgba(255, 149, 0, 0.15);    /* Naranja suave = está en nuestra oficina */
+  border-left: 4px solid rgba(255, 149, 0, 0.6);
+}
+
+#search-results .result-item.enviamos {
+  background: rgba(76, 217, 100, 0.15);   /* Verde suave = ya lo enviamos */
+  border-left: 4px solid rgba(76, 217, 100, 0.6);
+}
+
 
 /* Meta y badge */
 #search-results .meta {
@@ -448,6 +460,7 @@ button[type="submit"]:disabled {
     }
 
 }
+
 
 
 
