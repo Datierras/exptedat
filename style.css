@@ -469,6 +469,7 @@ button[type="submit"]:disabled {
     .modal-content {
         width: 95%;
     }
+}
 /* === Ajustes visuales MODO OSCURO (más suaves) === */
 
 /* Campos de texto y textarea: fondo más tenue y texto claro */
@@ -536,3 +537,60 @@ button[type="submit"]:disabled {
 
 
 
+
+
+
+/* ===== Overrides fuertes SOLO modo oscuro (IDs y estados) ===== */
+
+/* Botón ESCANEAR */
+[data-theme="dark"] #scan-carga-btn {
+  background-color: #3a3a3f !important;
+  color: #f1f1f2 !important;
+}
+[data-theme="dark"] #scan-carga-btn:hover {
+  background-color: #4a4a4f !important;
+}
+
+/* Botón GUARDAR EXPEDIENTE (habilitado y deshabilitado) */
+[data-theme="dark"] #save-expediente-btn:disabled {
+  background-color: #2f2f33 !important;
+  color: #8a8a8f !important;
+  cursor: not-allowed;
+}
+[data-theme="dark"] #save-expediente-btn:not(:disabled) {
+  background-color: var(--primary-blue) !important; /* 0a84ff en dark */
+  color: #ffffff !important;
+}
+
+/* Tab BÚSQUEDA cuando no está activa (mejor contraste) */
+[data-theme="dark"] #tab-busqueda:not(.active) {
+  background-color: #2a2a2e !important;
+  color: #cfcfd3 !important;
+}
+[data-theme="dark"] #tab-busqueda:not(.active):hover {
+  background-color: #3a3a3f !important;
+}
+
+/* Inputs aún más suaves en dark si venías de blanco muy brillante */
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: #26262a !important;
+  border-color: #3b3b40 !important;
+  color: #e8e8ea !important;
+}
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder { color: #9a9aa0 !important; }
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  background-color: #2f2f34 !important;
+  border-color: #0a84ff !important;
+  box-shadow: 0 0 0 3px rgba(10,132,255,0.30) !important;
+}
+
+/* Fondo general cálido en dark */
+[data-theme="dark"] body { background-color: #1d1d20 !important; }
