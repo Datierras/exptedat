@@ -189,8 +189,6 @@ auth.onAuthStateChanged(user => {
 });
 
 
-});
-
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = $('#login-email').value;
