@@ -534,27 +534,43 @@ function renderSearchResults(querySnapshot) {
   searchResultsContainer.innerHTML = '';
   let i = 0;
 
-  querySnapshot.forEach(doc => {
-    const data = doc.data();
-    const idCompleto = `${data.codigo}-${data.numero}-${data.letra}-${data.anio}`;
-    const fecha = data.createdAt ? formatDate(data.createdAt) : '—';
+ querySnapshot.forEach(doc => {
+  const data = doc.data();
+  const idCompleto = `${data.codigo}-${data.numero}-${data.letra}-${data.anio}`;
+  const fecha = data.createdAt ? formatDate(data.createdAt) : '—';
 
-    const item = document.createElement('div');
-    item.className = 'result-item' + (i === 0 ? ' latest' : '');
+  // --- NUEVO: decidir clase por estado (Recibimos/Enviamos) ---
+  // Tomo el movimiento desde 'data.movimiento' (y si no, intento ultimoMovimiento.tipo)
+  const movimientoRaw = (data.movimiento || data.ultimoMovimiento?.tipo || '').toString();
 
-    item.innerHTML = `
-      ${i === 0 ? '<span class="latest-badge">Último movimiento</span>' : ''}
-      <strong>ID: ${idCompleto}</strong>
-      <p class="meta"><strong>Fecha:</strong> ${fecha}</p>
-      <p><strong>Extracto:</strong> ${data.extracto || ''}</p>
-      <p><strong>Oficina:</strong> ${data.oficina || ''}</p>
-      <p><strong>Movimiento:</strong> ${data.movimiento || ''}</p>
-      <p><strong>Autor:</strong> ${data.autor || ''}</p>
-    `;
+  // Normalizo (sin tildes / minúsculas) para comparar robusto
+  const movimiento = movimientoRaw
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().trim(); // ej: "recibimos" | "enviamos"
 
-    searchResultsContainer.appendChild(item);
-    i++;
-  });
+  let estadoClase = '';
+  if (movimiento === 'recibimos') {
+    estadoClase = 'recibimos'; // Naranja (lo tenemos nosotros)
+  } else if (movimiento === 'enviamos') {
+    estadoClase = 'enviamos';  // Verde (ya se fue)
+  }
+
+  const item = document.createElement('div');
+  item.className = `result-item${i === 0 ? ' latest' : ''} ${estadoClase}`;
+
+  item.innerHTML = `
+    ${i === 0 ? '<span class="latest-badge">Último movimiento</span>' : ''}
+    <strong>ID: ${idCompleto}</strong>
+    <p class="meta"><strong>Fecha:</strong> ${fecha}</p>
+    <p><strong>Extracto:</strong> ${data.extracto || ''}</p>
+    <p><strong>Oficina:</strong> ${data.oficina || ''}</p>
+    <p><strong>Movimiento:</strong> ${data.movimiento || data.ultimoMovimiento?.tipo || ''}</p>
+    <p><strong>Autor:</strong> ${data.autor || ''}</p>
+  `;
+
+  searchResultsContainer.appendChild(item);
+  i++;
+});
 }
 
 
@@ -752,3 +768,4 @@ $$('.close-modal-btn').forEach(btn => {
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
+
