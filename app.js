@@ -63,6 +63,94 @@ const advancedSearchBtn    = $('#advanced-search-btn');
 const advancedSearchModal  = $('#advanced-search-modal');
 const advancedSearchForm   = $('#advanced-search-form');
 
+
+// === Auto-completar y bloquear "Extracto" por defecto ===
+(function setupExtractoAutofill(){
+  const numeroInp   = document.getElementById('carga-numero');
+  const letraInp    = document.getElementById('carga-letra');
+  const anioInp     = document.getElementById('carga-anio');
+  const extractoInp = document.getElementById('carga-extracto');
+
+  if (!numeroInp || !letraInp || !anioInp || !extractoInp) return;
+
+  // Crear botón "Editar extracto" si no existe
+  let toggleBtn = document.getElementById('toggle-extracto-edit');
+  if (!toggleBtn) {
+    toggleBtn = document.createElement('button');
+    toggleBtn.id = 'toggle-extracto-edit';
+    toggleBtn.type = 'button';
+    toggleBtn.textContent = 'Editar extracto';
+    toggleBtn.className = 'btn btn-secondary ml-2';
+    extractoInp.insertAdjacentElement('afterend', toggleBtn);
+  }
+
+  function lockExtracto(lock=true){
+    extractoInp.readOnly = lock;
+    extractoInp.classList.toggle('readonly', lock);
+    toggleBtn.textContent = lock ? 'Editar extracto' : 'Bloquear extracto';
+  }
+
+  
+async function fetchLastExtracto(){
+    const numeroRaw = (numeroInp.value || '').trim();
+    const letra  = (letraInp.value || '').trim().toUpperCase();
+    const anio   = (anioInp.value  || '').trim();
+    if (!numeroRaw || !letra || !anio) return;
+
+    const numeroAsNumber = Number(numeroRaw);
+    const numeroCandidates = isNaN(numeroAsNumber) ? [numeroRaw] : [numeroAsNumber, String(numeroRaw)];
+
+    // Intentar ambos formatos de 'numero' para compatibilidad
+    for (const numero of numeroCandidates){
+      try {
+        let q = db.collection('expedientes')
+          .where('numero', '==', numero)
+          .where('letra', '==', letra)
+          .where('anio', '==', anio)
+          .orderBy('createdAt', 'desc')
+          .limit(1);
+        const snap = await q.get();
+        if (!snap.empty) {
+          const doc = snap.docs[0].data();
+          if (doc && doc.extracto) {
+            if (!extractoInp.dataset.userEdited) {
+              extractoInp.value = doc.extracto;
+              lockExtracto(true);
+            }
+            extractoInp.dataset.autofilled = '1';
+            return;
+          }
+        }
+      } catch(err){
+        console.warn('[extracto-autofill] intento fallido', err);
+      }
+    }
+    // Si no hay historial, desbloquear
+    lockExtracto(false);
+}
+
+
+  // Marcar si el usuario edita manualmente
+  extractoInp.addEventListener('input', () => {
+    extractoInp.dataset.userEdited = '1';
+  });
+
+  // Toggle lock
+  toggleBtn.addEventListener('click', () => {
+    const willLock = !extractoInp.readOnly;
+    lockExtracto(willLock);
+  });
+
+  // Triggers para intentar autocompletar
+  ['change','blur'].forEach(evt=>{
+    numeroInp.addEventListener(evt, fetchLastExtracto);
+    letraInp.addEventListener(evt, fetchLastExtracto);
+    anioInp.addEventListener(evt, fetchLastExtracto);
+  });
+
+  // Al cargar la pestaña de carga, intentar autocompletar
+  document.addEventListener('DOMContentLoaded', fetchLastExtracto);
+})();
 // --- Lógica de Autenticación ---
 auth.onAuthStateChanged(user => {
   if (user) {
@@ -664,9 +752,3 @@ $$('.close-modal-btn').forEach(btn => {
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
-
-
-
-
-
-
