@@ -1,4 +1,4 @@
-// app.js (FINAL)
+// app.js (FINAL Y MEJORADO para Pistola USB y Etiqueta Compacta)
 
 // --- Inicialización de Firebase y Constantes Globales ---
 // Usar la sintaxis v8 compatible con los scripts del HTML
@@ -150,6 +150,9 @@ async function fetchLastExtracto(){
 
   // Al cargar la pestaña de carga, intentar autocompletar
   document.addEventListener('DOMContentLoaded', fetchLastExtracto);
+
+  // Exponer la función para llamarla después del escaneo USB
+  window.fetchLastExtracto = fetchLastExtracto;
 })();
 // --- Lógica de Autenticación ---
 auth.onAuthStateChanged(user => {
@@ -454,11 +457,20 @@ generateLabelBtn.addEventListener('click', () => {
   JsBarcode(barcodeSvg, fullId, {
     format: "CODE128",
     lineColor: "#000",
-    width: 2,
-    height: 50,
-    displayValue: false
+    // --- CAMBIO 1: Reducir el ancho para que sea más corto ---
+    // Un ancho de 1.5mm por barra es un buen punto de partida para lograr unos 5cm.
+    // El alto se mantiene para una buena legibilidad.
+    width: 1.5, // Ancho de cada barra en unidades de JsBarcode (generalmente px o mm si se especifica)
+    height: 40, // Alto del código de barras
+    displayValue: false // No mostrar el texto debajo del código de barras si ya lo tenemos arriba
   });
 
+  // --- CAMBIO 3: Ajustar el HTML del modal para eliminar el texto "Etiqueta de Expediente"
+  // y reducir el espacio. Asegúrate de que tu HTML del modal de etiqueta (<div id="label-modal">)
+  // en `index.html` refleje esto para que los estilos `margin-bottom` se apliquen al ID de texto.
+  // No hay un cambio aquí en JS, sino que se depende de la estructura HTML.
+  // En tu HTML, el `<p id="label-id-text">` debería tener un `margin-bottom` pequeño o nulo.
+  // Y el `<p>` o `<h1>` que dice "Etiqueta de Expediente" debería ser eliminado del HTML.
   openModal(labelModal);
 });
 
@@ -466,8 +478,16 @@ printLabelBtn.addEventListener('click', () => {
   const labelContent = $('#label-content').innerHTML;
   const printWindow = window.open('', '', 'height=400,width=600');
   printWindow.document.write('<html><head><title>Imprimir Etiqueta</title>');
-  printWindow.document.write('<style>body{text-align:center;font-family:sans-serif;} svg{width:80%;}</style>');
+  // --- CAMBIO: Ajustar CSS para impresión si es necesario, eliminar margen/padding superior del texto ---
+  printWindow.document.write('<style>');
+  printWindow.document.write('body{text-align:center;font-family:sans-serif;}');
+  printWindow.document.write('svg{width:80%; margin: 0 auto; display: block;}'); // Centrar SVG, eliminar margen superior
+  printWindow.document.write('#label-id-text { margin-bottom: 2mm; font-size: 1.2em; }'); // Reducir margen entre ID y barra
+  printWindow.document.write('</style>');
   printWindow.document.write('</head><body>');
+  // --- CAMBIO: Eliminar el encabezado "Etiqueta de Expediente" del contenido a imprimir si existe en el HTML de `label-content`
+  // Si tu `label-content` ya no contiene el "Etiqueta de Expediente", no se necesita cambiar aquí.
+  // Solo imprimir el contenido tal cual.
   printWindow.document.write(labelContent);
   printWindow.document.write('</body></html>');
   printWindow.document.close();
@@ -484,13 +504,18 @@ pdfLabelBtn.addEventListener('click', () => {
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
-    format: 'a6'
+    format: 'a6' // A6 es 105 x 148 mm
   });
 
-  doc.setFontSize(16);
-  doc.text('Etiqueta de Expediente', 74, 15, { align: 'center' });
+  // --- CAMBIO 2: Eliminar el texto "Etiqueta de Expediente" ---
+  // doc.setFontSize(16);
+  // doc.text('Etiqueta de Expediente', 74, 15, { align: 'center' }); // ELIMINADO
+
   doc.setFontSize(12);
-  doc.text(fullId, 74, 25, { align: 'center' });
+  // --- CAMBIO 3: Ajustar la posición vertical del ID del Expediente y el Código de Barras
+  // para eliminar el espacio.
+  const idTextY = 15; // Posición Y para el texto del ID (más arriba)
+  doc.text(fullId, 74, idTextY, { align: 'center' }); // Centrar texto horizontalmente
 
   const svgData = new XMLSerializer().serializeToString(svgElement);
   const canvas = document.createElement('canvas');
@@ -502,10 +527,18 @@ pdfLabelBtn.addEventListener('click', () => {
     ctx.drawImage(img, 0, 0);
     const dataUrl = canvas.toDataURL('image/png');
 
-    const barcodeWidth = 90;
-    const barcodeHeight = (barcodeWidth * img.height) / img.width;
-    const x = (148 - barcodeWidth) / 2;
-    doc.addImage(dataUrl, 'PNG', x, 40, barcodeWidth, barcodeHeight);
+    // Asumimos un ancho deseado del código de barras en el PDF (ej. 50mm)
+    const barcodeWidthPdf = 50; // Aproximadamente 5cm
+    const barcodeHeightPdf = (barcodeWidthPdf * img.height) / img.width;
+
+    // Calcular posición X para centrar
+    const x = (148 - barcodeWidthPdf) / 2; // (Ancho A6 - Ancho Código) / 2
+
+    // Posición Y para el código de barras, justo después del texto del ID
+    // Ajustar este valor para controlar el espacio entre el ID y el código de barras
+    const barcodeY = idTextY + 5; // 5mm de espacio después del texto del ID
+
+    doc.addImage(dataUrl, 'PNG', x, barcodeY, barcodeWidthPdf, barcodeHeightPdf);
 
     doc.save(`etiqueta-${fullId}.pdf`);
   };
@@ -594,6 +627,43 @@ function renderSearchResults(querySnapshot) {
   i++;
 });
 }
+
+// --- MODIFICACIÓN CLAVE: Lógica robusta para manejar el resultado del escaneo (Video o USB) ---
+function handleScanResult(text) {
+  // 1. Detenemos el escáner de video (si es que se activó) y cerramos el modal.
+  stopScanner(); 
+  
+  // 2. Normalizamos la cadena: reemplazamos el apóstrofe y convertimos a mayúsculas
+  const cleanedText = text.replace(/'/g, '-').toUpperCase();
+  const parts = cleanedText.split('-');
+
+  if (parts.length === 4) {
+    // 3. Determinamos el modo (si viene de ZXing se usa state.scannerMode, si no, vemos la pestaña activa)
+    const currentMode = state.scannerMode || (cargaSection.classList.contains('hidden') ? 'busqueda' : 'carga');
+
+    if (currentMode === 'carga') {
+      $('#carga-codigo').value = parts[0];
+      $('#carga-numero').value = parts[1];
+      $('#carga-letra').value  = parts[2];
+      $('#carga-anio').value   = parts[3];
+      
+      // 4. Disparar el autofill del extracto (que está expuesto globalmente)
+      if (window.fetchLastExtracto) {
+          window.fetchLastExtracto();
+      }
+
+    } else if (currentMode === 'busqueda') {
+      $('#search-codigo').value = parts[0];
+      $('#search-numero').value = parts[1];
+      $('#search-letra').value  = parts[2];
+      $('#search-anio').value   = parts[3];
+      performSearch();
+    }
+  } else {
+    alert(`Código no reconocido. Formato esperado: CODIGO-NUMERO-LETRA-AÑO. Recibido: ${text}`);
+  }
+}
+// ------------------------------------------------------------------------------------------------
 
 
 // --- Escáner (móvil robusto: permiso previo + trasera + fallback) ---
@@ -689,6 +759,7 @@ async function startScanWithDevice(deviceId) {
   await state.scanner.decodeFromVideoDevice(deviceId, scannerVideo, (result, err) => {
     if (result && !scanLock) {
       scanLock = true;
+      // Llamada a la función handleScanResult modificada.
       handleScanResult(result.getText());
     }
     if (err && err.constructor && err.constructor.name !== 'NotFoundException') {
@@ -707,6 +778,7 @@ async function startScanWithConstraints(constraints) {
   await state.scanner.decodeFromConstraints(constraints, scannerVideo, (result, err) => {
     if (result && !scanLock) {
       scanLock = true;
+      // Llamada a la función handleScanResult modificada.
       handleScanResult(result.getText());
     }
     if (err && err.constructor && err.constructor.name !== 'NotFoundException') {
@@ -730,26 +802,6 @@ async function startScan() {
   }
 }
 
-function handleScanResult(text) {
-  stopScanner();
-  const parts = text.split('-');
-  if (parts.length === 4) {
-    if (state.scannerMode === 'carga') {
-      $('#carga-codigo').value = parts[0];
-      $('#carga-numero').value = parts[1];
-      $('#carga-letra').value  = parts[2];
-      $('#carga-anio').value   = parts[3];
-    } else if (state.scannerMode === 'busqueda') {
-      $('#search-codigo').value = parts[0];
-      $('#search-numero').value = parts[1];
-      $('#search-letra').value  = parts[2];
-      $('#search-anio').value   = parts[3];
-      performSearch();
-    }
-  } else {
-    alert('Código no reconocido. Formato esperado: CODIGO-NUMERO-LETRA-AÑO');
-  }
-}
 
 function stopScanner() {
   try { state.scanner?.reset(); } catch(_) {}
@@ -760,6 +812,68 @@ function stopScanner() {
 scanCargaBtn.addEventListener('click', () => initScanner('carga'));
 scanBusquedaBtn.addEventListener('click', () => initScanner('busqueda'));
 cameraSelect.addEventListener('change', startScan);
+
+
+// --- NUEVO BLOQUE: Lógica para Pistola USB (Simulación de Teclado) ---
+const SCAN_TIMEOUT = 50; // Tiempo máximo (ms) entre pulsaciones para considerarlo un escaneo
+const SCAN_END_KEY = 'Enter'; // La mayoría de las pistolas terminan con Enter
+
+let scanBuffer = '';
+let scanTimer = null;
+
+document.addEventListener('keydown', (e) => {
+    // Si no hay usuario logueado o si estamos editando texto dentro de un modal 
+    // que no es el de escáner de video, ignoramos la entrada.
+    if (!state.currentUser) return; 
+    
+    // Si el foco está en un input normal, no queremos interrumpirlo, 
+    // a menos que sea un escaneo rápido. Solo capturamos caracteres.
+    if (e.key.length !== 1 && e.key !== SCAN_END_KEY) return;
+    
+    // Si estamos en un campo de texto con el foco, dejamos que el navegador lo maneje.
+    // Esto previene que la pistola "escriba" en el campo y luego "rellene" todos los campos.
+    const activeElement = document.activeElement;
+    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') && activeElement.type !== 'range') {
+        // PERO, si el usuario está tipeando rápido o termina con Enter, es probablemente la pistola.
+        // Solo continuamos la lógica si detectamos el final del escaneo (Enter).
+        if (e.key !== SCAN_END_KEY) return;
+    }
+
+
+    // 1. Detección de fin de escaneo (Enter)
+    if (e.key === SCAN_END_KEY) {
+        clearTimeout(scanTimer); 
+
+        if (scanBuffer.length > 0) {
+            e.preventDefault(); // Detiene el comportamiento predeterminado (ej: envío de formulario)
+            
+            // Usamos handleScanResult, que ya maneja la división y el rellenado de campos
+            const textToProcess = scanBuffer;
+            scanBuffer = ''; // Limpiamos el buffer
+            
+            // El modo de escaneo será el de la pestaña activa, 
+            // ya que no hay un 'state.scannerMode' activo de la cámara de video
+            state.scannerMode = cargaSection.classList.contains('hidden') ? 'busqueda' : 'carga';
+            handleScanResult(textToProcess);
+            state.scannerMode = null; // Limpiamos el estado después de usarlo
+        }
+        return;
+    }
+    
+    // 2. Acumulación de caracteres
+    if (e.key.length === 1) { 
+        clearTimeout(scanTimer);
+        scanBuffer += e.key;
+
+        // Limpia el buffer si no hay otra pulsación rápida
+        scanTimer = setTimeout(() => {
+            console.log('[Scan USB] Timeout. Buffer limpiado.');
+            scanBuffer = '';
+        }, SCAN_TIMEOUT);
+    }
+});
+// -------------------------------------------------------------------------
+
 
 // --- Lógica de Modales ---
 function openModal(modal) {
@@ -790,5 +904,3 @@ $$('.close-modal-btn').forEach(btn => {
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
-
-
