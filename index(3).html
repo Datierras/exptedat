@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Expedientes</title>
+
+    <!-- 🌓 Script para aplicar el tema oscuro/claro antes de cargar estilos -->
+    <script>
+        document.documentElement.setAttribute(
+            'data-theme',
+            localStorage.getItem('theme') || 'light'
+        );
+    </script>
+
+    <link rel="stylesheet" href="style.css?v=sr4">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+    <div id="auth-container">
+        <div class="login-card glass-panel">
+            <h2>Gestión de Expedientes</h2>
+            <p>Inicia sesión para continuar</p>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Correo electrónico" required>
+                <input type="password" id="login-password" placeholder="Contraseña" required>
+                <button type="submit">Ingresar</button>
+            </form>
+            <p id="auth-error" class="error-message"></p>
+        </div>
+    </div>
+
+    <main id="app-container" class="hidden">
+        <header class="topbar">
+            <h1>Gestión de Expedientes</h1>
+            <button id="theme-toggle" class="icon-btn" title="Cambiar tema">🌙</button>
+            <button id="settings-btn" class="icon-btn">⚙️</button>
+        </header>
+
+        <nav class="tabs">
+            <button id="tab-carga" class="tab-btn active">CARGA</button>
+            <button id="tab-busqueda" class="tab-btn">BÚSQUEDA</button>
+        </nav>
+
+        <section id="carga-section" class="content-section">
+            <form id="expediente-form" class="main-form">
+                <div class="form-grid">
+                    <input type="text" id="carga-codigo" placeholder="Código" required>
+                    <input type="number" id="carga-numero" placeholder="Número" required>
+                    <input type="text" id="carga-letra" placeholder="Letra" required>
+                    <input type="number" id="carga-anio" placeholder="Año" required>
+                </div>
+                <textarea id="carga-extracto" placeholder="Extracto..." rows="3" required></textarea>
+                <select id="carga-oficina" required>
+                    <option value="" disabled selected>Seleccionar Oficina...</option>
+                    <option>Administración General</option>
+                    <option>D.G. de Ingreso de Tierras</option>
+                    <option>D.G. de Escrituración Familiar</option>
+                    <option>D.G. de Regularización Dominial</option>
+                    <option>D.G. de Programa de Tierras</option>
+                    <option>C.G.P. Legal, Administrativo e Institucional</option>
+                    <option>C.G.P. de Hábitat, Vivienda e Integración Urbana</option>
+                    <option>C.G.P. Abordate Territorial</option>
+                    <option>C.G.P. de Obras Particulares y Catastro</option>
+                    <option>C.G.P. de Gerencia de Proyectos</option>
+                    <option>Contaduría</option>
+                    <option>Jefatura de Compras y Contrataciones</option>
+                    <option>Tesorería</option>
+                    <option>Mesa de Entradas</option>
+                </select>
+                <div class="radio-group">
+                    <label><input type="radio" name="movimiento" value="Recibimos" checked> Recibimos</label>
+                    <label><input type="radio" name="movimiento" value="Enviamos"> Enviamos</label>
+                </div>
+                
+                <div class="custom-dropdown">
+                    <button type="button" class="dropdown-toggle">
+                        Nomenclatura <span class="arrow">▶</span>
+                    </button>
+                    <div class="dropdown-content">
+                        <input type="text" id="nomen-circ" placeholder="Circunscripción">
+                        <input type="text" id="nomen-secc" placeholder="Sección">
+                        <input type="text" id="nomen-chac" placeholder="Chacra">
+                        <input type="text" id="nomen-lch" placeholder="L. CH.">
+                        <input type="text" id="nomen-quin" placeholder="Quinta">
+                        <input type="text" id="nomen-lqt" placeholder="L. Qt.">
+                        <input type="text" id="nomen-frac" placeholder="Fracción">
+                        <input type="text" id="nomen-lfr" placeholder="L. Fr.">
+                        <input type="text" id="nomen-manz" placeholder="Manzana">
+                        <input type="text" id="nomen-lmz" placeholder="L. Mz.">
+                        <input type="text" id="nomen-parc" placeholder="Parcela">
+                        <input type="text" id="nomen-lpc" placeholder="L. Pc.">
+                        <input type="text" id="part-prov" placeholder="Partida Provincial">
+                        <input type="text" id="part-mun" placeholder="Partida Municipal">
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button type="button" id="generate-label-btn">Generar etiqueta</button>
+                    <button type="button" id="scan-carga-btn">Escanear</button>
+                    <button type="submit" id="save-expediente-btn">Guardar expediente</button>
+                </div>
+            </form>
+        </section>
+
+      <section id="busqueda-section" class="content-section hidden">
+  <form id="search-form" class="main-form">
+    <div class="form-grid">
+      <input type="text" id="search-codigo" placeholder="Código (ej: 4078)">
+      <input type="number" id="search-numero" placeholder="Número (obligatorio)">
+      <input type="text" id="search-letra" placeholder="Letra (ej: I)" maxlength="1" oninput="this.value=this.value.toUpperCase()">
+      <input type="number" id="search-anio" placeholder="Año (ej: 2025)" maxlength="4" oninput="this.value=this.value.slice(0,4)">
+    </div>
+
+    <textarea id="search-extracto" placeholder="Extracto (opcional)"></textarea>
+
+    <div class="action-buttons">
+      <button type="submit" id="search-btn">Buscar</button>
+      <button type="button" id="clear-search-btn">Limpiar</button>
+      <button type="button" id="advanced-search-btn">Búsqueda Avanzada</button>
+      <button type="button" id="scan-busqueda-btn">Escanear</button>
+    </div>
+  </form>
+
+  <!-- Contenedor de resultados con id y clase para que aplique el CSS -->
+  <div id="search-results" class="results-list"></div>
+</section>
+        
+    </main>
+
+    <div id="modal-overlay" class="hidden">
+        
+        <div id="settings-modal" class="modal-content glass-panel hidden">
+            <h2>Configuración</h2>
+            <input type="text" id="user-apodo" placeholder="Tu apodo o nombre">
+            <div class="modal-actions">
+                <button id="save-settings-btn">Guardar</button>
+                <button class="close-modal-btn">Cerrar</button>
+            </div>
+        </div>
+
+        <div id="advanced-search-modal" class="modal-content glass-panel hidden">
+            <h2>Búsqueda Avanzada</h2>
+            <form id="advanced-search-form">
+                <input type="text" id="adv-nomen-circ" placeholder="Circunscripción">
+                <input type="text" id="adv-nomen-secc" placeholder="Sección">
+                <input type="text" id="adv-nomen-chac" placeholder="Chacra">
+                <input type="text" id="adv-nomen-quin" placeholder="Quinta">
+                <input type="text" id="adv-nomen-manz" placeholder="Manzana">
+                <input type="text" id="adv-nomen-parc" placeholder="Parcela">
+                <input type="text" id="adv-part-prov" placeholder="Partida Provincial">
+                <input type="text" id="adv-part-mun" placeholder="Partida Municipal">
+                <div class="modal-actions">
+                    <button type="submit">Buscar</button>
+                    <button type="button" class="close-modal-btn">Cerrar</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="scanner-modal" class="modal-content glass-panel hidden">
+            <h2>Escanear Código</h2>
+            <video id="scanner-video" autoplay muted playsinline></video>
+            <select id="camera-select" class="camera-select"></select>
+            <p id="scanner-feedback">Apunte la cámara al código de barras...</p>
+            <div class="modal-actions">
+               <button class="close-modal-btn">Cancelar</button>
+            </div>
+        </div>
+
+        <div id="label-modal" class="modal-content glass-panel hidden">
+            <h2>Etiqueta Generada</h2>
+            <div id="label-content">
+                <p id="label-id-text"></p>
+                <svg id="barcode"></svg>
+            </div>
+            <div class="modal-actions">
+                <button id="print-label-btn">Imprimir</button>
+                <button id="pdf-label-btn">PDF</button>
+                <button class="close-modal-btn">Cerrar</button>
+            </div>
+        </div>
+
+    </div>
+    
+    <button id="logout-btn" class="logout-btn hidden">Salir</button>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+      <script src="config.js"></script>
+      <script src="app.js"></script>
+</body>
+</html>
