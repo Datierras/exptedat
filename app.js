@@ -469,6 +469,11 @@ function distributeTo(prefix, raw, srcEl) {
   // foco siguiente
   const next = (prefix === 'carga') ? '#carga-extracto' : '#search-extracto';
   document.querySelector(next)?.focus();
+  
+// Si estoy en BÚSQUEDA, disparo la búsqueda automáticamente
+if (prefix === 'search') {
+  try { searchForm?.requestSubmit?.(); } catch(_) { /* noop */ }
+}
 
   return true;
 }
@@ -867,6 +872,7 @@ $$('.close-modal-btn').forEach(btn => {
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
+
 
 
 
