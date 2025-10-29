@@ -1,117 +1,200 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gestión de Expedientes</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Expedientes</title>
 
-  <style>
-    :root { --gap: 12px; }
-    * { box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 20px; color: #1a1a1a; background: #f7f7f8; }
-    h1 { margin: 0 0 12px; font-size: 22px; }
+    <!-- 🌓 Script para aplicar el tema oscuro/claro antes de cargar estilos -->
+    <script>
+        document.documentElement.setAttribute(
+            'data-theme',
+            localStorage.getItem('theme') || 'light'
+        );
+    </script>
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 200px));
-      gap: var(--gap);
-      align-items: end;
-      max-width: 880px;
-    }
-    label { font-size: 14px; color: #444; }
-    input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #d0d0d0;
-      border-radius: 10px;
-      background: #fff;
-      outline: none;
-      font-size: 16px;
-    }
-    input:focus { border-color: #6b8cff; box-shadow: 0 0 0 2px rgba(107,140,255,.15); }
-
-    .actions { margin-top: 16px; display: flex; gap: 10px; }
-    button {
-      appearance: none; border: 0; border-radius: 12px; padding: 10px 14px;
-      background: #111827; color: #fff; font-weight: 600; cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,.12);
-    }
-    button.secondary { background: #374151; }
-    button:disabled { opacity: .6; cursor: not-allowed; }
-
-    /* Modal */
-    .hidden { display: none !important; }
-    #modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.35);
-      display: flex; align-items: center; justify-content: center; padding: 20px;
-      z-index: 50;
-    }
-    #label-modal {
-      background: #fff; border-radius: 16px; width: 760px; max-width: 100%;
-      padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,.2);
-    }
-    #label-id-text { font-weight: 700; margin-bottom: 10px; font-size: 18px; }
-    #barcode { display: block; width: 100%; max-width: 680px; }
-    .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
-
-    /* Impresión: solo la etiqueta del modal */
-    @media print {
-      body > *:not(#modal-overlay) { display: none !important; }
-      #modal-overlay { background: transparent; padding: 0; }
-      #label-modal { box-shadow: none; width: auto; border: 0; padding: 0; }
-      .modal-actions { display: none !important; }
-      #barcode { max-width: none; }
-    }
-  </style>
+    <link rel="stylesheet" href="style.css?v=sr4">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
-  <h1>Nuevo expediente</h1>
-
-  <div class="grid" role="form" aria-label="Formulario de expediente">
-    <label>
-      Código
-      <input id="carga-codigo" type="text" inputmode="numeric" autocomplete="off" placeholder="Ej: 1234" />
-    </label>
-    <label>
-      Número
-      <input id="carga-numero" type="text" inputmode="numeric" autocomplete="off" placeholder="Ej: 123456" />
-    </label>
-    <label>
-      Letra
-      <input id="carga-letra" type="text" maxlength="1" autocomplete="off" placeholder="Ej: I" />
-    </label>
-    <label>
-      Año
-      <input id="carga-anio" type="text" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Ej: 2025" />
-    </label>
-  </div>
-
-  <div class="actions">
-    <button id="generate-label-btn" title="Generar etiqueta con código de barras">Generar etiqueta</button>
-    <button id="print-label-btn" class="secondary" title="Imprimir (usa el modal abierto)">Imprimir</button>
-    <button id="pdf-label-btn" class="secondary" title="Descargar PDF de la etiqueta">PDF</button>
-  </div>
-
-  <!-- Modal de etiqueta -->
-  <div id="modal-overlay" class="hidden" aria-hidden="true">
-    <div id="label-modal" role="dialog" aria-modal="true" aria-labelledby="label-id-text">
-      <div id="label-id-text">Expediente: —</div>
-      <svg id="barcode" aria-label="Código de barras"></svg>
-
-      <div class="modal-actions">
-        <button id="close-modal-btn">Cerrar</button>
-        <!-- Botón de imprimir del modal (sin ID para no duplicar el de arriba) -->
-        <button type="button" onclick="window.print()">Imprimir</button>
-      </div>
+    <div id="auth-container">
+        <div class="login-card glass-panel">
+            <h2>Gestión de Expedientes</h2>
+            <p>Inicia sesión para continuar</p>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Correo electrónico" required>
+                <input type="password" id="login-password" placeholder="Contraseña" required>
+                <button type="submit">Ingresar</button>
+            </form>
+            <p id="auth-error" class="error-message"></p>
+        </div>
     </div>
-  </div>
 
-  <!-- Librerías (antes de tu app.js) -->
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <main id="app-container" class="hidden">
+        <header class="topbar">
+            <h1>Gestión de Expedientes</h1>
+            <button id="theme-toggle" class="icon-btn" title="Cambiar tema">🌙</button>
+            <button id="settings-btn" class="icon-btn">⚙️</button>
+        </header>
 
-  <!-- Tu lógica -->
-  <script src="app.js"></script>
+        <nav class="tabs">
+            <button id="tab-carga" class="tab-btn active">CARGA</button>
+            <button id="tab-busqueda" class="tab-btn">BÚSQUEDA</button>
+        </nav>
+
+        <section id="carga-section" class="content-section">
+            <form id="expediente-form" class="main-form">
+                <div class="form-grid">
+                    <input type="text" id="carga-codigo" placeholder="Código" required>
+                    <input type="number" id="carga-numero" placeholder="Número" required>
+                    <input type="text" id="carga-letra" placeholder="Letra" required>
+                    <input type="number" id="carga-anio" placeholder="Año" required>
+                </div>
+                <textarea id="carga-extracto" placeholder="Extracto..." rows="3" required></textarea>
+                <select id="carga-oficina" required>
+                    <option value="" disabled selected>Seleccionar Oficina...</option>
+                    <option>Administración General</option>
+                    <option>D.G. de Ingreso de Tierras</option>
+                    <option>D.G. de Escrituración Familiar</option>
+                    <option>D.G. de Regularización Dominial</option>
+                    <option>D.G. de Programa de Tierras</option>
+                    <option>C.G.P. Legal, Administrativo e Institucional</option>
+                    <option>C.G.P. de Hábitat, Vivienda e Integración Urbana</option>
+                    <option>C.G.P. Abordate Territorial</option>
+                    <option>C.G.P. de Obras Particulares y Catastro</option>
+                    <option>C.G.P. de Gerencia de Proyectos</option>
+                    <option>Contaduría</option>
+                    <option>Jefatura de Compras y Contrataciones</option>
+                    <option>Tesorería</option>
+                    <option>Mesa de Entradas</option>
+                </select>
+                <div class="radio-group">
+                    <label><input type="radio" name="movimiento" value="Recibimos" checked> Recibimos</label>
+                    <label><input type="radio" name="movimiento" value="Enviamos"> Enviamos</label>
+                </div>
+                
+                <div class="custom-dropdown">
+                    <button type="button" class="dropdown-toggle">
+                        Nomenclatura <span class="arrow">▶</span>
+                    </button>
+                    <div class="dropdown-content">
+                        <input type="text" id="nomen-circ" placeholder="Circunscripción">
+                        <input type="text" id="nomen-secc" placeholder="Sección">
+                        <input type="text" id="nomen-chac" placeholder="Chacra">
+                        <input type="text" id="nomen-lch" placeholder="L. CH.">
+                        <input type="text" id="nomen-quin" placeholder="Quinta">
+                        <input type="text" id="nomen-lqt" placeholder="L. Qt.">
+                        <input type="text" id="nomen-frac" placeholder="Fracción">
+                        <input type="text" id="nomen-lfr" placeholder="L. Fr.">
+                        <input type="text" id="nomen-manz" placeholder="Manzana">
+                        <input type="text" id="nomen-lmz" placeholder="L. Mz.">
+                        <input type="text" id="nomen-parc" placeholder="Parcela">
+                        <input type="text" id="nomen-lpc" placeholder="L. Pc.">
+                        <input type="text" id="part-prov" placeholder="Partida Provincial">
+                        <input type="text" id="part-mun" placeholder="Partida Municipal">
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button type="button" id="generate-label-btn">Generar etiqueta</button>
+                    <button type="button" id="scan-carga-btn">Escanear</button>
+                    <button type="submit" id="save-expediente-btn">Guardar expediente</button>
+                </div>
+            </form>
+        </section>
+
+      <section id="busqueda-section" class="content-section hidden">
+  <form id="search-form" class="main-form">
+    <div class="form-grid">
+      <input type="text" id="search-codigo" placeholder="Código (ej: 4078)">
+      <input type="number" id="search-numero" placeholder="Número (obligatorio)">
+      <input type="text" id="search-letra" placeholder="Letra (ej: I)" maxlength="1" oninput="this.value=this.value.toUpperCase()">
+      <input type="number" id="search-anio" placeholder="Año (ej: 2025)" maxlength="4" oninput="this.value=this.value.slice(0,4)">
+    </div>
+
+    <textarea id="search-extracto" placeholder="Extracto (opcional)"></textarea>
+
+    <div class="action-buttons">
+      <button type="submit" id="search-btn">Buscar</button>
+      <button type="button" id="clear-search-btn">Limpiar</button>
+      <button type="button" id="advanced-search-btn">Búsqueda Avanzada</button>
+      <button type="button" id="scan-busqueda-btn">Escanear</button>
+    </div>
+  </form>
+
+  <!-- Contenedor de resultados con id y clase para que aplique el CSS -->
+  <div id="search-results" class="results-list"></div>
+</section>
+        
+    </main>
+
+    <div id="modal-overlay" class="hidden">
+        
+        <div id="settings-modal" class="modal-content glass-panel hidden">
+            <h2>Configuración</h2>
+            <input type="text" id="user-apodo" placeholder="Tu apodo o nombre">
+            <div class="modal-actions">
+                <button id="save-settings-btn">Guardar</button>
+                <button class="close-modal-btn">Cerrar</button>
+            </div>
+        </div>
+
+        <div id="advanced-search-modal" class="modal-content glass-panel hidden">
+            <h2>Búsqueda Avanzada</h2>
+            <form id="advanced-search-form">
+                <input type="text" id="adv-nomen-circ" placeholder="Circunscripción">
+                <input type="text" id="adv-nomen-secc" placeholder="Sección">
+                <input type="text" id="adv-nomen-chac" placeholder="Chacra">
+                <input type="text" id="adv-nomen-quin" placeholder="Quinta">
+                <input type="text" id="adv-nomen-manz" placeholder="Manzana">
+                <input type="text" id="adv-nomen-parc" placeholder="Parcela">
+                <input type="text" id="adv-part-prov" placeholder="Partida Provincial">
+                <input type="text" id="adv-part-mun" placeholder="Partida Municipal">
+                <div class="modal-actions">
+                    <button type="submit">Buscar</button>
+                    <button type="button" class="close-modal-btn">Cerrar</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="scanner-modal" class="modal-content glass-panel hidden">
+            <h2>Escanear Código</h2>
+            <video id="scanner-video" autoplay muted playsinline></video>
+            <select id="camera-select" class="camera-select"></select>
+            <p id="scanner-feedback">Apunte la cámara al código de barras...</p>
+            <div class="modal-actions">
+               <button class="close-modal-btn">Cancelar</button>
+            </div>
+        </div>
+
+        <div id="label-modal" class="modal-content glass-panel hidden">
+            <h2>Etiqueta Generada</h2>
+            <div id="label-content">
+                <p id="label-id-text"></p>
+                <svg id="barcode"></svg>
+            </div>
+            <div class="modal-actions">
+                <button id="print-label-btn">Imprimir</button>
+                <button id="pdf-label-btn">PDF</button>
+                <!-- 👇 Único cambio: agrego id para enganchar con app.js -->
+                <button class="close-modal-btn" id="close-modal-btn">Cerrar</button>
+            </div>
+        </div>
+
+    </div>
+    
+    <button id="logout-btn" class="logout-btn hidden">Salir</button>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+      <script src="config.js"></script>
+      <script src="app.js"></script>
 </body>
 </html>
