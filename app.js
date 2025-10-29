@@ -429,8 +429,68 @@ expedienteForm.addEventListener('submit', async (e) => {
   }
 });
 
+// === Distribución de lecturas del lector USB (HID) ===
+const EXP_SCAN_RE = /^(\d+)[-']?(\d+)[-']?([A-Za-z])[-/'"]?(\d{4})$/;
+
+function distributeExpedienteParts(str) {
+  const m = (str || '').trim().match(EXP_SCAN_RE);
+  if (!m) return false;
+  const [, c, n, l, a] = m;
+  $('#carga-codigo').value = c;
+  $('#carga-numero').value = n;
+  $('#carga-letra').value  = l.toUpperCase();
+  $('#carga-anio').value   = a;
+  return true;
+}
+
+// Enganchar los inputs para capturar lecturas completas y repartir
+['#carga-codigo','#carga-numero','#carga-letra','#carga-anio'].forEach(sel => {
+  const el = document.querySelector(sel);
+  if (!el) return;
+
+  // Pegar
+  el.addEventListener('paste', (ev) => {
+    const text = (ev.clipboardData || window.clipboardData).getData('text');
+    if (distributeExpedienteParts(text)) {
+      ev.preventDefault();
+      el.value = '';
+      $('#carga-extracto')?.focus();
+    }
+  });
+
+  // Tab / Enter del lector como terminador
+  el.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Tab' || ev.key === 'Enter') {
+      const v = el.value;
+      if (distributeExpedienteParts(v)) {
+        ev.preventDefault();
+        el.value = '';
+        $('#carga-extracto')?.focus();
+      }
+    }
+  });
+
+  // Change como fallback
+  el.addEventListener('change', () => {
+    if (distributeExpedienteParts(el.value)) {
+      el.value = '';
+      $('#carga-extracto')?.focus();
+    }
+  });
+
+  // En vivo
+  el.addEventListener('input', () => {
+    const v = el.value;
+    if (v.length >= 6 && distributeExpedienteParts(v)) {
+      el.value = '';
+      $('#carga-extracto')?.focus();
+    }
+  });
+});
+
+
 // --- Lógica de Etiquetas y PDF ---
-// [CAMBIO] Generación con texto humano (con "/") + valor codificado (con "-") y ancho fijo 50mm
+// Generación con texto humano (con "/") + valor codificado (con "-") y ancho fijo 50mm
 generateLabelBtn.addEventListener('click', () => {
   const codigo = $('#carga-codigo').value.trim();
   const numero = $('#carga-numero').value.trim();
@@ -451,7 +511,7 @@ generateLabelBtn.addEventListener('click', () => {
   labelIdText.textContent = humanId;
 
   // Forzar el tamaño máximo del código a 50 mm de ancho
-  barcodeSvg.style.width  = '50mm';   // [CAMBIO] ancho máx. 5 cm
+  barcodeSvg.style.width  = '50mm';   // ancho máx. 5 cm
   barcodeSvg.style.height = 'auto';   // mantiene proporción
   barcodeSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
@@ -459,8 +519,8 @@ generateLabelBtn.addEventListener('click', () => {
   JsBarcode(barcodeSvg, barcodeId, {
     format: "CODE128",
     lineColor: "#000",
-    width: 1,          // [CAMBIO] barras finas; se escala al ancho final 50mm
-    height: 28,        // altura razonable (en px del SVG, luego escala)
+    width: 1,          // barras finas; el SVG se escala a 50mm
+    height: 28,        // altura razonable en px del SVG
     displayValue: false,
     margin: 4
   });
@@ -472,7 +532,7 @@ printLabelBtn.addEventListener('click', () => {
   const labelContent = $('#label-content').innerHTML;
   const printWindow = window.open('', '', 'height=400,width=600');
   printWindow.document.write('<html><head><title>Imprimir Etiqueta</title>');
-  // [CAMBIO] Asegurar 50mm en impresión
+  // Asegurar 50mm en impresión
   printWindow.document.write('<style>body{text-align:center;font-family:sans-serif;} #barcode{width:50mm;height:auto;} svg{width:50mm !important;height:auto !important;}</style>');
   printWindow.document.write('</head><body>');
   printWindow.document.write(labelContent);
@@ -483,11 +543,11 @@ printLabelBtn.addEventListener('click', () => {
   printWindow.close();
 });
 
-// [CAMBIO] PDF con ancho 50 mm exactos y nombre de archivo seguro
+// PDF con ancho 50 mm exactos y nombre de archivo seguro
 pdfLabelBtn.addEventListener('click', () => {
   const { jsPDF } = window.jspdf;
   const humanId = labelIdText.textContent;             // ej: 4078-252307-I/2025
-  const barcodeId = humanId.replace('/', '-');         // ej: 4078-252307-I-2025 (seguro y legible por el escáner)
+  const barcodeId = humanId.replace('/', '-');         // ej: 4078-252307-I-2025
   const svgElement = barcodeSvg;
 
   const doc = new jsPDF({
@@ -511,7 +571,7 @@ pdfLabelBtn.addEventListener('click', () => {
     ctx.drawImage(img, 0, 0);
     const dataUrl = canvas.toDataURL('image/png');
 
-    const barcodeWidth = 50; // [CAMBIO] 50 mm = 5 cm
+    const barcodeWidth = 50; // 50 mm = 5 cm
     const barcodeHeight = (barcodeWidth * img.height) / img.width;
     const pageW = 148; // A6 landscape width (mm)
     const x = (pageW - barcodeWidth) / 2;
@@ -610,14 +670,7 @@ function stopMediaTracks(videoEl) {
   videoEl.srcObject = null;
 }
 
-// --- Escáner (móvil robusto) ---
 let scanLock = false; // evita disparar dos veces
-
-function stopMediaTracks(videoEl) {
-  const stream = videoEl.srcObject;
-  if (stream && stream.getTracks) stream.getTracks().forEach(t => t.stop());
-  videoEl.srcObject = null;
-}
 
 async function listVideoInputs() {
   const devices = await navigator.mediaDevices.enumerateDevices();
@@ -724,7 +777,7 @@ async function startScan() {
   }
 }
 
-// [SIN CAMBIOS] espera 'COD-NUM-LETRA-ANIO' y rellena
+// Espera 'COD-NUM-LETRA-ANIO' y rellena (para el escáner por cámara)
 function handleScanResult(text) {
   stopScanner();
   const parts = text.split('-');
