@@ -429,9 +429,15 @@ expedienteForm.addEventListener('submit', async (e) => {
   }
 });
 
-// === Distribución de lecturas del lector USB (HID) ===
+// === Distribución automática de lecturas del lector USB (HID) ===
+
+// Patrón del código de barras: 4 grupos separados por "-" o "'"
 const EXP_SCAN_RE = /^(\d+)[-']?(\d+)[-']?([A-Za-z])[-/'"]?(\d{4})$/;
 
+/**
+ * Distribuye un texto tipo "4078-252307-I-2023" en los 4 campos
+ * Retorna true si fue válido y se aplicó
+ */
 function distributeExpedienteParts(str) {
   const m = (str || '').trim().match(EXP_SCAN_RE);
   if (!m) return false;
@@ -440,15 +446,42 @@ function distributeExpedienteParts(str) {
   $('#carga-numero').value = n;
   $('#carga-letra').value  = l.toUpperCase();
   $('#carga-anio').value   = a;
+  console.log('[SCAN OK]', { c, n, l, a });
   return true;
 }
 
-// Enganchar los inputs para capturar lecturas completas y repartir
-['#carga-codigo','#carga-numero','#carga-letra','#carga-anio'].forEach(sel => {
+/**
+ * Detecta lecturas completas pegadas o tipeadas rápidamente
+ * en cualquier campo (especialmente #carga-codigo).
+ * Si el lector no envía ENTER/TAB, igual lo detectamos en vivo.
+ */
+['#carga-codigo', '#carga-numero', '#carga-letra', '#carga-anio'].forEach(sel => {
   const el = document.querySelector(sel);
   if (!el) return;
 
-  // Pegar
+  // --- Lectura "en vivo" (caso más común) ---
+  el.addEventListener('input', () => {
+    const v = el.value.trim();
+    // Si ya se parece a un expediente completo, lo repartimos
+    if (v.length >= 8 && distributeExpedienteParts(v)) {
+      el.value = '';
+      $('#carga-extracto')?.focus();
+    }
+  });
+
+  // --- Si el lector envía ENTER o TAB al final ---
+  el.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter' || ev.key === 'Tab') {
+      const v = el.value.trim();
+      if (distributeExpedienteParts(v)) {
+        ev.preventDefault();
+        el.value = '';
+        $('#carga-extracto')?.focus();
+      }
+    }
+  });
+
+  // --- Si se pega manualmente o con click derecho ---
   el.addEventListener('paste', (ev) => {
     const text = (ev.clipboardData || window.clipboardData).getData('text');
     if (distributeExpedienteParts(text)) {
@@ -458,30 +491,9 @@ function distributeExpedienteParts(str) {
     }
   });
 
-  // Tab / Enter del lector como terminador
-  el.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Tab' || ev.key === 'Enter') {
-      const v = el.value;
-      if (distributeExpedienteParts(v)) {
-        ev.preventDefault();
-        el.value = '';
-        $('#carga-extracto')?.focus();
-      }
-    }
-  });
-
-  // Change como fallback
+  // --- Fallback: onChange ---
   el.addEventListener('change', () => {
     if (distributeExpedienteParts(el.value)) {
-      el.value = '';
-      $('#carga-extracto')?.focus();
-    }
-  });
-
-  // En vivo
-  el.addEventListener('input', () => {
-    const v = el.value;
-    if (v.length >= 6 && distributeExpedienteParts(v)) {
       el.value = '';
       $('#carga-extracto')?.focus();
     }
@@ -838,3 +850,4 @@ $$('.close-modal-btn').forEach(btn => {
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
+
