@@ -448,6 +448,7 @@ function fillSection(prefix, c, n, l, a) {
 }
 
 /** Intenta repartir un string en la sección indicada */
+/** Intenta repartir un string en la sección indicada */
 function distributeTo(prefix, raw, srcEl) {
   const v = (raw || '').trim();
   const m = v.match(EXP_SCAN_RE);
@@ -456,10 +457,16 @@ function distributeTo(prefix, raw, srcEl) {
   const [, c, n, l, a] = m;
   fillSection(prefix, c, n, l, a);
 
-  // Limpia SIEMPRE el campo donde cayó la lectura para que no quede "sucio"
-  if (srcEl) srcEl.value = '';
+  // ⚙️ NO limpiar si la lectura cayó en el propio campo "codigo"
+  const codeId = `${prefix}-codigo`;
+  if (srcEl && srcEl.id !== codeId) {
+    srcEl.value = '';
+  } else if (srcEl && srcEl.id === codeId) {
+    // asegura que quede 4078
+    srcEl.value = c;
+  }
 
-  // Enfoca un siguiente campo útil
+  // foco siguiente
   const next = (prefix === 'carga') ? '#carga-extracto' : '#search-extracto';
   document.querySelector(next)?.focus();
 
@@ -860,6 +867,7 @@ $$('.close-modal-btn').forEach(btn => {
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
+
 
 
 
