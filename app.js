@@ -431,94 +431,85 @@ expedienteForm.addEventListener('submit', async (e) => {
 
 // === Distribución automática de lecturas del lector USB (HID) ===
 
-// Soporta - ' y " como separadores
+// Acepta separadores -, ' o "
 const EXP_SCAN_RE = /^(\d+)[-']?(\d+)[-']?([A-Za-z])[-/'"]?(\d{4})$/;
 
-/** Distribuye en una sección (prefix = 'carga' | 'search') */
-function distributeTo(prefix, str) {
-  const m = (str || '').trim().match(EXP_SCAN_RE);
-  if (!m) return false;
-  const [, c, n, l, a] = m;
+/** Rellena los 4 campos de una sección (prefix = 'carga' | 'search') */
+function fillSection(prefix, c, n, l, a) {
+  const fCod = document.querySelector(`#${prefix}-codigo`);
+  const fNum = document.querySelector(`#${prefix}-numero`);
+  const fLet = document.querySelector(`#${prefix}-letra`);
+  const fAn  = document.querySelector(`#${prefix}-anio`);
 
-  // set en la sección indicada
-  document.querySelector(`#${prefix}-codigo`)?.setAttribute('value', c);
-  document.querySelector(`#${prefix}-codigo`).value = c;
-  document.querySelector(`#${prefix}-numero`).value = n;
-  document.querySelector(`#${prefix}-letra`).value  = l.toUpperCase();
-  document.querySelector(`#${prefix}-anio`).value   = a;
+  if (fCod) fCod.value = c;
+  if (fNum) fNum.value = n;
+  if (fLet) fLet.value = (l || '').toUpperCase();
+  if (fAn)  fAn.value  = a;
+}
+
+/** Intenta repartir un string en la sección indicada */
+function distributeTo(prefix, raw, srcEl) {
+  const v = (raw || '').trim();
+  const m = v.match(EXP_SCAN_RE);
+  if (!m) return false;
+
+  const [, c, n, l, a] = m;
+  fillSection(prefix, c, n, l, a);
+
+  // Limpia SIEMPRE el campo donde cayó la lectura para que no quede "sucio"
+  if (srcEl) srcEl.value = '';
+
+  // Enfoca un siguiente campo útil
+  const next = (prefix === 'carga') ? '#carga-extracto' : '#search-extracto';
+  document.querySelector(next)?.focus();
+
   return true;
 }
 
-/** Handler genérico para inputs de una sección */
+/** Asocia listeners robustos a una sección */
 function attachScanHandlersFor(prefix) {
-  const ids = [`#${prefix}-codigo`, `#${prefix}-numero`, `#${prefix}-letra`, `#${prefix}-anio`];
+  const selectors = [
+    `#${prefix}-codigo`,
+    `#${prefix}-numero`,
+    `#${prefix}-letra`,
+    `#${prefix}-anio`
+  ];
 
-  ids.forEach(sel => {
+  selectors.forEach(sel => {
     const el = document.querySelector(sel);
     if (!el) return;
 
-    // En vivo (caso típico: el lector no manda terminador)
+    // En vivo: si aparece un patrón completo, distribuimos
     el.addEventListener('input', () => {
-      const v = el.value.trim();
-      if (v.length >= 8 && distributeTo(prefix, v)) {
-        // IMPORTANTE: si el origen fue el primer campo, NO lo vaciamos: lo dejamos con "c"
-        if (el.id !== `${prefix}-codigo`) el.value = '';
-        // foco cómodo
-        if (prefix === 'carga') {
-          document.querySelector('#carga-extracto')?.focus();
-        } else {
-          document.querySelector('#search-extracto')?.focus();
-        }
-      }
+      const val = el.value;
+      // Evita repartir con muy pocas teclas; 8 es suficiente para detectar
+      if (val && val.length >= 8) distributeTo(prefix, val, el);
     });
 
-    // Terminador ENTER / TAB
+    // Si el lector manda ENTER/TAB
     el.addEventListener('keydown', (ev) => {
       if (ev.key === 'Enter' || ev.key === 'Tab') {
-        const v = el.value.trim();
-        if (distributeTo(prefix, v)) {
-          ev.preventDefault();
-          if (el.id !== `${prefix}-codigo`) el.value = '';
-          if (prefix === 'carga') {
-            document.querySelector('#carga-extracto')?.focus();
-          } else {
-            document.querySelector('#search-extracto')?.focus();
-          }
-        }
+        if (distributeTo(prefix, el.value, el)) ev.preventDefault();
       }
     });
 
-    // Pegado
+    // Si pegás el código manualmente
     el.addEventListener('paste', (ev) => {
       const text = (ev.clipboardData || window.clipboardData).getData('text');
-      if (distributeTo(prefix, text)) {
-        ev.preventDefault();
-        if (el.id !== `${prefix}-codigo`) el.value = '';
-        if (prefix === 'carga') {
-          document.querySelector('#carga-extracto')?.focus();
-        } else {
-          document.querySelector('#search-extracto')?.focus();
-        }
-      }
+      if (distributeTo(prefix, text, el)) ev.preventDefault();
     });
 
-    // Fallback change
+    // Fallback por si change se dispara
     el.addEventListener('change', () => {
-      if (distributeTo(prefix, el.value)) {
-        if (el.id !== `${prefix}-codigo`) el.value = '';
-        if (prefix === 'carga') {
-          document.querySelector('#carga-extracto')?.focus();
-        } else {
-          document.querySelector('#search-extracto')?.focus();
-        }
-      }
+      distributeTo(prefix, el.value, el);
     });
   });
 }
 
-// Activar para ambas secciones
+// Activar para ambas secciones (CARGA y BÚSQUEDA)
 attachScanHandlersFor('carga');
 attachScanHandlersFor('search');
+
 
 // --- Lógica de Etiquetas y PDF ---
 // Generación con texto humano (con "/") + valor codificado (con "-") y ancho fijo 50mm
@@ -869,5 +860,6 @@ $$('.close-modal-btn').forEach(btn => {
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
+
 
 
