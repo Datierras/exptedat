@@ -106,6 +106,59 @@
                     <button type="submit" id="save-expediente-btn">Guardar expediente</button>
                 </div>
             </form>
+            <!-- ========================================================== -->
+<!-- Envío grupal de expedientes -->
+<!-- ========================================================== -->
+<hr class="divider">
+
+<div id="envio-grupal" class="envio-grupal">
+  <h3>📦 Envío grupal de expedientes</h3>
+
+  <!-- Fila de carga rápida -->
+  <div class="form-row">
+    <input id="envio-codigo"  type="text" placeholder="Código"  autocomplete="off">
+    <input id="envio-numero"  type="text" placeholder="Número"  autocomplete="off">
+    <input id="envio-letra"   type="text" placeholder="Letra"   autocomplete="off">
+    <input id="envio-anio"    type="text" placeholder="Año"     autocomplete="off">
+    <button id="agregar-expediente" type="button" class="btn">Agregar</button>
+  </div>
+
+  <!-- Lista de expedientes -->
+  <div class="table-wrap" style="margin-top:8px;">
+    <table id="tabla-envios">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Número</th>
+          <th>Letra</th>
+          <th>Año</th>
+          <th>Quitar</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Oficina destino -->
+  <div class="form-row" style="margin-top:10px;">
+    <label for="envio-oficina-select" style="margin-right:6px;">Enviar a oficina:</label>
+    <select id="envio-oficina-select">
+      <option value="">Seleccionar...</option>
+      <option value="Administración">Administración</option>
+      <option value="Contaduría">Contaduría</option>
+      <option value="Catastro">Catastro</option>
+      <option value="Legales">Legales</option>
+    </select>
+  </div>
+
+  <!-- Botón de confirmación -->
+  <div style="margin-top:10px;">
+    <button id="confirmar-envio-btn" type="button" class="btn btn-primary">
+      Confirmar envío
+    </button>
+  </div>
+</div>
+<!-- ========================================================== -->
         </section>
 
       <section id="busqueda-section" class="content-section hidden">
