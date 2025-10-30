@@ -1,7 +1,6 @@
-// app.js (FINAL)
+// app.js (FINAL con ENVÍO GRUPAL en modal)
 
 // --- Inicialización de Firebase y Constantes Globales ---
-// Usar la sintaxis v8 compatible con los scripts del HTML
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -12,12 +11,12 @@ const state = {
   currentUser: null,
   userProfile: { apodo: '' },
   scanner: null,
-  scannerMode: null, // 'carga' o 'busqueda'
+  scannerMode: null, // 'carga' | 'busqueda'
 };
 
 // --- Selectores del DOM ---
-const $  = (selector) => document.querySelector(selector);
-const $$ = (selector) => document.querySelectorAll(selector);
+const $  = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
 
 const authContainer = $('#auth-container');
 const appContainer  = $('#app-container');
@@ -25,23 +24,25 @@ const logoutBtn     = $('#logout-btn');
 const loginForm     = $('#login-form');
 const authError     = $('#auth-error');
 
-const tabCarga      = $('#tab-carga');
-const tabBusqueda   = $('#tab-busqueda');
-const cargaSection  = $('#carga-section');
+const tabCarga        = $('#tab-carga');
+const tabBusqueda     = $('#tab-busqueda');
+const cargaSection    = $('#carga-section');
 const busquedaSection = $('#busqueda-section');
 
-const expedienteForm   = $('#expediente-form');
-const saveExpedienteBtn= $('#save-expediente-btn');
-const settingsBtn      = $('#settings-btn');
+const expedienteForm     = $('#expediente-form');
+const saveExpedienteBtn  = $('#save-expediente-btn');
+const settingsBtn        = $('#settings-btn');
 
-const modalOverlay     = $('#modal-overlay');
-const allModals        = $$('.modal-content');
-const settingsModal    = $('#settings-modal');
-const saveSettingsBtn  = $('#save-settings-btn');
-const userApodoInput   = $('#user-apodo');
+const modalOverlay    = $('#modal-overlay');
+const allModals       = $$('.modal-content');
+const settingsModal   = $('#settings-modal');
+const advancedSearchModal = $('#advanced-search-modal');
 
-const dropdown         = $('.custom-dropdown');
-const dropdownToggle   = $('.dropdown-toggle');
+const saveSettingsBtn = $('#save-settings-btn');
+const userApodoInput  = $('#user-apodo');
+
+const dropdown        = $('.custom-dropdown');
+const dropdownToggle  = $('.dropdown-toggle');
 
 const generateLabelBtn = $('#generate-label-btn');
 const labelModal       = $('#label-modal');
@@ -56,13 +57,15 @@ const scannerModal     = $('#scanner-modal');
 const scannerVideo     = $('#scanner-video');
 const cameraSelect     = $('#camera-select');
 
-const searchForm           = $('#search-form');
+const searchForm             = $('#search-form');
 const searchResultsContainer = $('#search-results');
-const clearSearchBtn       = $('#clear-search-btn');
-const advancedSearchBtn    = $('#advanced-search-btn');
-const advancedSearchModal  = $('#advanced-search-modal');
-const advancedSearchForm   = $('#advanced-search-form');
+const clearSearchBtn         = $('#clear-search-btn');
+const advancedSearchBtn      = $('#advanced-search-btn');
+const advancedSearchForm     = $('#advanced-search-form');
 
+// NUEVO: Envío grupal (modal)
+const openEnvioModalBtn = $('#open-envio-modal-btn'); // botón en action-buttons
+const envioModal        = $('#envio-modal');           // modal con contenido de envío grupal
 
 // === Auto-completar y bloquear "Extracto" por defecto ===
 (function setupExtractoAutofill(){
@@ -73,7 +76,6 @@ const advancedSearchForm   = $('#advanced-search-form');
 
   if (!numeroInp || !letraInp || !anioInp || !extractoInp) return;
 
-  // Crear botón "Editar extracto" si no existe
   let toggleBtn = document.getElementById('toggle-extracto-edit');
   if (!toggleBtn) {
     toggleBtn = document.createElement('button');
@@ -144,7 +146,6 @@ const advancedSearchForm   = $('#advanced-search-form');
   document.addEventListener('DOMContentLoaded', fetchLastExtracto);
 })();
 
-
 // --- Lógica de Autenticación ---
 auth.onAuthStateChanged(user => {
   if (user) {
@@ -154,7 +155,7 @@ auth.onAuthStateChanged(user => {
     logoutBtn.classList.remove('hidden');
     loadUserProfile();
 
-    // --- Toggle Modo Noche / Día ---
+    // Toggle Modo
     const root = document.documentElement;
     const themeToggle = document.getElementById('theme-toggle');
 
@@ -162,7 +163,6 @@ auth.onAuthStateChanged(user => {
       const savedTheme = localStorage.getItem('theme') || 'light';
       root.setAttribute('data-theme', savedTheme);
       themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-
       themeToggle.onclick = null;
       themeToggle.addEventListener('click', () => {
         const current = root.getAttribute('data-theme') || 'light';
@@ -180,7 +180,6 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = $('#login-email').value;
@@ -194,9 +193,7 @@ loginForm.addEventListener('submit', async (e) => {
   }
 });
 
-logoutBtn.addEventListener('click', () => {
-  auth.signOut();
-});
+logoutBtn.addEventListener('click', () => auth.signOut());
 
 function handleAuthError(error) {
   switch (error.code) {
@@ -216,7 +213,7 @@ function handleAuthError(error) {
   }
 }
 
-// --- Gestión de Perfil de Usuario (Apodo) ---
+// --- Perfil de Usuario ---
 async function loadUserProfile() {
   if (!state.currentUser) return;
   const userDocRef = db.collection('usuarios').doc(state.currentUser.uid);
@@ -224,10 +221,16 @@ async function loadUserProfile() {
   if (docSnap.exists) {
     state.userProfile = docSnap.data();
     userApodoInput.value = state.userProfile.apodo || '';
+
+    // Aplicar última oficina si existe
+    const sel = document.querySelector('#carga-oficina');
+    if (sel && state.userProfile.ultimaOficina) {
+      sel.value = state.userProfile.ultimaOficina;
+    }
   }
 }
 
-saveSettingsBtn.addEventListener('click', async () => {
+saveSettingsBtn?.addEventListener('click', async () => {
   if (!state.currentUser) return;
   const apodo = userApodoInput.value.trim();
   const userDocRef = db.collection('usuarios').doc(state.currentUser.uid);
@@ -242,7 +245,7 @@ saveSettingsBtn.addEventListener('click', async () => {
   }
 });
 
-// --- SEARCH RZ14 --- //
+// --- SEARCH RZ14 ---
 async function performSearch(isAdvanced = false) {
   console.log('[search] start, isAdvanced =', isAdvanced);
   searchResultsContainer.innerHTML = '<p>Buscando...</p>';
@@ -296,7 +299,6 @@ async function performSearch(isAdvanced = false) {
       return;
     }
 
-    // 1) Intento con numero como STRING (recomendado)
     let q1 = base;
     if (codigo) q1 = q1.where('codigo', '==', codigo);
     q1 = q1.where('numero', '==', numero);
@@ -311,7 +313,6 @@ async function performSearch(isAdvanced = false) {
     let snap = await q1.get();
     console.log('[search] intento string, size=', snap.size);
 
-    // 2) Si no hay resultados, intentamos con numero como NUMBER
     if (snap.empty && !isNaN(Number(numero))) {
       let q2 = base;
       if (codigo) q2 = q2.where('codigo', '==', codigo);
@@ -329,7 +330,7 @@ async function performSearch(isAdvanced = false) {
         console.log('[search] intento number, size=', snap2.size);
         snap = snap2;
       } catch (e2) {
-        console.error('[search] fallo intento number (¿falta índice compuesto numero+createdAt?):', e2);
+        console.error('[search] fallo intento number:', e2);
       }
     }
 
@@ -339,12 +340,11 @@ async function performSearch(isAdvanced = false) {
     console.error('Error en la búsqueda:', error);
     searchResultsContainer.innerHTML = `
       <p class="error-message">
-        Error al buscar. Es posible que necesites crear un <strong>índice compuesto</strong> en Firestore.
-        Abrí la consola (F12) y seguí el enlace que te da Firestore.
+        Error al buscar. Puede requerirse un <strong>índice compuesto</strong> en Firestore.
+        Revisá la consola (F12) para el enlace sugerido.
       </p>`;
   }
 }
-
 
 // --- Navegación por Pestañas ---
 function switchTab(activeTab) {
@@ -363,15 +363,15 @@ function switchTab(activeTab) {
   }
 }
 
-tabCarga.addEventListener('click', () => switchTab('carga'));
-tabBusqueda.addEventListener('click', () => switchTab('busqueda'));
+tabCarga?.addEventListener('click', () => switchTab('carga'));
+tabBusqueda?.addEventListener('click', () => switchTab('busqueda'));
 
-// --- Lógica de la Sección de CARGA ---
-dropdownToggle.addEventListener('click', () => {
-  dropdown.classList.toggle('open');
+// --- CARGA (form principal) ---
+dropdownToggle?.addEventListener('click', () => {
+  dropdown?.classList.toggle('open');
 });
 
-expedienteForm.addEventListener('submit', async (e) => {
+expedienteForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   saveExpedienteBtn.disabled = true;
   saveExpedienteBtn.textContent = 'Guardando...';
@@ -415,11 +415,17 @@ expedienteForm.addEventListener('submit', async (e) => {
     return;
   }
 
+  // Guardar última oficina
+  try {
+    await db.collection('usuarios').doc(state.currentUser.uid)
+      .set({ ultimaOficina: expedienteData.oficina }, { merge: true });
+  } catch(_) {}
+
   try {
     await db.collection('expedientes').add(expedienteData);
     alert('Expediente guardado con éxito.');
     expedienteForm.reset();
-    dropdown.classList.remove('open');
+    dropdown?.classList.remove('open');
   } catch (error) {
     console.error('Error al guardar el expediente: ', error);
     alert('Hubo un error al guardar. Inténtalo de nuevo.');
@@ -430,80 +436,71 @@ expedienteForm.addEventListener('submit', async (e) => {
 });
 
 // === Distribución automática de lecturas del lector USB (HID) ===
-
 // Acepta separadores -, ' o "
 const EXP_SCAN_RE = /^(\d+)[-']?(\d+)[-']?([A-Za-z])[-/'"]?(\d{4})$/;
 
-/** Rellena los 4 campos de una sección (prefix = 'carga' | 'search') */
+// Rellena los 4 campos de una sección (prefix = 'carga'|'search'|'envio')
 function fillSection(prefix, c, n, l, a) {
   const fCod = document.querySelector(`#${prefix}-codigo`);
   const fNum = document.querySelector(`#${prefix}-numero`);
   const fLet = document.querySelector(`#${prefix}-letra`);
   const fAn  = document.querySelector(`#${prefix}-anio`);
-
   if (fCod) fCod.value = c;
   if (fNum) fNum.value = n;
   if (fLet) fLet.value = (l || '').toUpperCase();
   if (fAn)  fAn.value  = a;
 }
 
-/** Intenta repartir un string en la sección indicada */
-/** Intenta repartir un string en la sección indicada */
+// Intenta repartir un string en la sección indicada
 function distributeTo(prefix, raw, srcEl) {
   const v = (raw || '').trim();
   const m = v.match(EXP_SCAN_RE);
   if (!m) return false;
-
   const [, c, n, l, a] = m;
+
   fillSection(prefix, c, n, l, a);
-    // Si estamos en ENVÍO, auto-agregar a la lista
- // ⬇️ Auto-agregar y limpiar campos en Envío Grupal
-if (prefix === 'envio') {
-  addExpToEnvioLista({ codigo: c, numero: n, letra: l, anio: a });
 
-  // limpiar los 4 campos para permitir el siguiente escaneo
-  const ec = document.querySelector('#envio-codigo');
-  const en = document.querySelector('#envio-numero');
-  const el = document.querySelector('#envio-letra');
-  const ea = document.querySelector('#envio-anio');
+  // En Envío: auto-agregar a la lista y limpiar campos
+  if (prefix === 'envio') {
+    addExpToEnvioLista({ codigo: c, numero: n, letra: l, anio: a });
 
-  // pequeño defer para no cortar el buffer del escáner si aún está enviando
-  setTimeout(() => {
-    if (ec) ec.value = '';
-    if (en) en.value = '';
-    if (el) el.value = '';
-    if (ea) ea.value = '';
-    // volver a poner el foco donde escaneás normalmente
-    ec?.focus();
-  }, 30);
-}
+    // limpiar los 4 campos para permitir el siguiente escaneo
+    const ec = document.querySelector('#envio-codigo');
+    const en = document.querySelector('#envio-numero');
+    const el = document.querySelector('#envio-letra');
+    const ea = document.querySelector('#envio-anio');
+    setTimeout(() => {
+      if (ec) ec.value = '';
+      if (en) en.value = '';
+      if (el) el.value = '';
+      if (ea) ea.value = '';
+      ec?.focus();
+    }, 30);
+  }
 
-  // ⚙️ NO limpiar si la lectura cayó en el propio campo "codigo"
+  // NO limpiar si la lectura cayó en el propio campo "codigo"
   const codeId = `${prefix}-codigo`;
   if (srcEl && srcEl.id !== codeId) {
     srcEl.value = '';
   } else if (srcEl && srcEl.id === codeId) {
-    // asegura que quede 4078
-    srcEl.value = c;
+    srcEl.value = c; // asegura que quede 4078
   }
 
-  // foco siguiente
-const next = (prefix === 'carga') ? '#carga-extracto'
+  // Foco siguiente
+  const next = (prefix === 'carga') ? '#carga-extracto'
             : (prefix === 'search') ? '#search-extracto'
-            : '#envio-codigo'; // para 'envio', volver a Código
-document.querySelector(next)?.focus();
+            : '#envio-codigo'; // para 'envio'
+  document.querySelector(next)?.focus();
 
-;
-  
-// Si estoy en BÚSQUEDA, disparo la búsqueda automáticamente
-if (prefix === 'search') {
-  try { searchForm?.requestSubmit?.(); } catch(_) { /* noop */ }
-}
+  // En Búsqueda: disparar búsqueda automática (cómodo)
+  if (prefix === 'search') {
+    try { searchForm?.requestSubmit?.(); } catch(_) {}
+  }
 
   return true;
 }
 
-/** Asocia listeners robustos a una sección */
+// Handlers robustos de escaneo/pegado por sección
 function attachScanHandlersFor(prefix) {
   const selectors = [
     `#${prefix}-codigo`,
@@ -516,27 +513,22 @@ function attachScanHandlersFor(prefix) {
     const el = document.querySelector(sel);
     if (!el) return;
 
-    // En vivo: si aparece un patrón completo, distribuimos
     el.addEventListener('input', () => {
       const val = el.value;
-      // Evita repartir con muy pocas teclas; 8 es suficiente para detectar
       if (val && val.length >= 8) distributeTo(prefix, val, el);
     });
 
-    // Si el lector manda ENTER/TAB
     el.addEventListener('keydown', (ev) => {
       if (ev.key === 'Enter' || ev.key === 'Tab') {
         if (distributeTo(prefix, el.value, el)) ev.preventDefault();
       }
     });
 
-    // Si pegás el código manualmente
     el.addEventListener('paste', (ev) => {
       const text = (ev.clipboardData || window.clipboardData).getData('text');
       if (distributeTo(prefix, text, el)) ev.preventDefault();
     });
 
-    // Fallback por si change se dispara
     el.addEventListener('change', () => {
       distributeTo(prefix, el.value, el);
     });
@@ -548,40 +540,32 @@ attachScanHandlersFor('carga');
 attachScanHandlersFor('search');
 attachScanHandlersFor('envio');
 
-
-
-// --- Lógica de Etiquetas y PDF ---
-// Generación con texto humano (con "/") + valor codificado (con "-") y ancho fijo 50mm
-generateLabelBtn.addEventListener('click', () => {
+// --- Etiquetas y PDF (Code128, 50 mm ancho) ---
+generateLabelBtn?.addEventListener('click', () => {
   const codigo = $('#carga-codigo').value.trim();
   const numero = $('#carga-numero').value.trim();
   const letra  = ($('#carga-letra').value || '').trim().toUpperCase();
   const anio   = $('#carga-anio').value.trim();
 
   if (!codigo || !numero || !letra || !anio) {
-    alert('Completa los campos Código, Número, Letra y Año para generar la etiqueta.');
+    alert('Completa Código, Número, Letra y Año para generar la etiqueta.');
     return;
   }
 
-  // Texto visible (humano)
   const humanId   = `${codigo}-${numero}-${letra}/${anio}`;
-  // Valor que se codifica en barras (para que el escáner lo divida en 4 partes por "-")
   const barcodeId = `${codigo}-${numero}-${letra}-${anio}`;
 
-  // Mostrar texto humano arriba del código
   labelIdText.textContent = humanId;
 
-  // Forzar el tamaño máximo del código a 50 mm de ancho
-  barcodeSvg.style.width  = '50mm';   // ancho máx. 5 cm
-  barcodeSvg.style.height = 'auto';   // mantiene proporción
+  barcodeSvg.style.width  = '50mm';
+  barcodeSvg.style.height = 'auto';
   barcodeSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-  // Render Code128
   JsBarcode(barcodeSvg, barcodeId, {
     format: "CODE128",
     lineColor: "#000",
-    width: 1,          // barras finas; el SVG se escala a 50mm
-    height: 28,        // altura razonable en px del SVG
+    width: 1,
+    height: 28,
     displayValue: false,
     margin: 4
   });
@@ -589,34 +573,26 @@ generateLabelBtn.addEventListener('click', () => {
   openModal(labelModal);
 });
 
-printLabelBtn.addEventListener('click', () => {
+printLabelBtn?.addEventListener('click', () => {
   const labelContent = $('#label-content').innerHTML;
-  const printWindow = window.open('', '', 'height=400,width=600');
-  printWindow.document.write('<html><head><title>Imprimir Etiqueta</title>');
-  // Asegurar 50mm en impresión
-  printWindow.document.write('<style>body{text-align:center;font-family:sans-serif;} #barcode{width:50mm;height:auto;} svg{width:50mm !important;height:auto !important;}</style>');
-  printWindow.document.write('</head><body>');
-  printWindow.document.write(labelContent);
-  printWindow.document.write('</body></html>');
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
-  printWindow.close();
+  const win = window.open('', '', 'height=400,width=600');
+  win.document.write('<html><head><title>Imprimir Etiqueta</title>');
+  win.document.write('<style>body{text-align:center;font-family:sans-serif;} #barcode{width:50mm;height:auto;} svg{width:50mm !important;height:auto !important;}</style>');
+  win.document.write('</head><body>');
+  win.document.write(labelContent);
+  win.document.write('</body></html>');
+  win.document.close();
+  win.focus();
+  win.print();
+  win.close();
 });
 
-// PDF con ancho 50 mm exactos y nombre de archivo seguro
-pdfLabelBtn.addEventListener('click', () => {
+pdfLabelBtn?.addEventListener('click', () => {
   const { jsPDF } = window.jspdf;
-  const humanId = labelIdText.textContent;             // ej: 4078-252307-I/2025
-  const barcodeId = humanId.replace('/', '-');         // ej: 4078-252307-I-2025
+  const humanId = labelIdText.textContent;     // ej: 4078-252307-I/2025
   const svgElement = barcodeSvg;
 
-  const doc = new jsPDF({
-    orientation: 'landscape',
-    unit: 'mm',
-    format: 'a6'
-  });
-
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a6' });
   doc.setFontSize(14);
   doc.text('Etiqueta de Expediente', 74, 14, { align: 'center' });
   doc.setFontSize(12);
@@ -632,50 +608,45 @@ pdfLabelBtn.addEventListener('click', () => {
     ctx.drawImage(img, 0, 0);
     const dataUrl = canvas.toDataURL('image/png');
 
-    const barcodeWidth = 50; // 50 mm = 5 cm
+    const barcodeWidth = 50; // mm
     const barcodeHeight = (barcodeWidth * img.height) / img.width;
-    const pageW = 148; // A6 landscape width (mm)
+    const pageW = 148; // A6 landscape
     const x = (pageW - barcodeWidth) / 2;
 
     doc.addImage(dataUrl, 'PNG', x, 36, barcodeWidth, barcodeHeight);
-    doc.save(`etiqueta-${barcodeId}.pdf`);
+    const filename = 'etiqueta-' + humanId.replace('/', '-') + '.pdf';
+    doc.save(filename);
   };
   img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
 });
 
-// --- Lógica de Búsqueda ---
-searchForm.addEventListener('submit', (e) => {
+// --- Búsqueda (submit) ---
+searchForm?.addEventListener('submit', (e) => {
   e.preventDefault();
   performSearch();
 });
-
-advancedSearchForm.addEventListener('submit', (e) => {
+advancedSearchForm?.addEventListener('submit', (e) => {
   e.preventDefault();
   performSearch(true);
 });
-
-// --- Botón Limpiar (mantener) ---
-clearSearchBtn.addEventListener('click', () => {
-  searchForm.reset();
+clearSearchBtn?.addEventListener('click', () => {
+  searchForm?.reset();
   searchResultsContainer.innerHTML = '';
 });
 
-// --- NUEVO: formateador de fecha para mostrar createdAt ---
+// --- Mostrar resultados ---
 function formatDate(ts) {
   const d = ts && typeof ts.toDate === 'function' ? ts.toDate() : new Date(ts);
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const yyyy = d.getFullYear();
-
   let hours = d.getHours();
   const minutes = String(d.getMinutes()).padStart(2, '0');
   const ampm = hours >= 12 ? 'pm' : 'am';
   hours = hours % 12 || 12;
-
   return `${dd}/${mm}/${yyyy} - ${hours}:${minutes} ${ampm}`;
 }
 
-// --- ÚNICA función renderSearchResults (con fecha + destacado) ---
 function renderSearchResults(querySnapshot) {
   if (querySnapshot.empty) {
     searchResultsContainer.innerHTML = '<p>No se encontraron expedientes.</p>';
@@ -696,11 +667,8 @@ function renderSearchResults(querySnapshot) {
       .toLowerCase().trim();
 
     let estadoClase = '';
-    if (movimiento === 'recibimos') {
-      estadoClase = 'recibimos';
-    } else if (movimiento === 'enviamos') {
-      estadoClase = 'enviamos';
-    }
+    if (movimiento === 'recibimos') estadoClase = 'recibimos';
+    else if (movimiento === 'enviamos') estadoClase = 'enviamos';
 
     const item = document.createElement('div');
     item.className = `result-item${i === 0 ? ' latest' : ''} ${estadoClase}`;
@@ -714,24 +682,19 @@ function renderSearchResults(querySnapshot) {
       <p><strong>Movimiento:</strong> ${data.movimiento || data.ultimoMovimiento?.tipo || ''}</p>
       <p><strong>Autor:</strong> ${data.autor || ''}</p>
     `;
-
     searchResultsContainer.appendChild(item);
     i++;
   });
 }
 
-
-// --- Escáner (móvil robusto: permiso previo + trasera + fallback) ---
-// Utilidad: detener tracks de un <video>
+// --- Escáner por cámara (ZXing) ---
 function stopMediaTracks(videoEl) {
-  const stream = videoEl.srcObject;
-  if (stream && stream.getTracks) {
-    stream.getTracks().forEach(t => t.stop());
-  }
-  videoEl.srcObject = null;
+  const stream = videoEl?.srcObject;
+  if (stream && stream.getTracks) stream.getTracks().forEach(t => t.stop());
+  if (videoEl) videoEl.srcObject = null;
 }
 
-let scanLock = false; // evita disparar dos veces
+let scanLock = false;
 
 async function listVideoInputs() {
   const devices = await navigator.mediaDevices.enumerateDevices();
@@ -838,7 +801,6 @@ async function startScan() {
   }
 }
 
-// Espera 'COD-NUM-LETRA-ANIO' y rellena (para el escáner por cámara)
 function handleScanResult(text) {
   stopScanner();
   const parts = text.split('-');
@@ -866,19 +828,20 @@ function stopScanner() {
   closeAllModals();
 }
 
-scanCargaBtn.addEventListener('click', () => initScanner('carga'));
-scanBusquedaBtn.addEventListener('click', () => initScanner('busqueda'));
-cameraSelect.addEventListener('change', startScan);
+scanCargaBtn?.addEventListener('click', () => initScanner('carga'));
+scanBusquedaBtn?.addEventListener('click', () => initScanner('busqueda'));
+cameraSelect?.addEventListener('change', startScan);
 
-// --- Lógica de Modales ---
+// --- Modales (incluye ENVÍO GRUPAL modal) ---
 function openModal(modal) {
-  modalOverlay.classList.remove('hidden');
+  if (!modal) return;
+  modalOverlay?.classList.remove('hidden');
   modal.classList.remove('hidden');
 }
 
 function closeAllModals() {
-  modalOverlay.classList.add('hidden');
-  allModals.forEach(modal => modal.classList.add('hidden'));
+  modalOverlay?.classList.add('hidden');
+  allModals.forEach(m => m.classList.add('hidden'));
   try { state.scanner?.reset(); } catch (_) {}
   if (scannerVideo) {
     try { stopMediaTracks(scannerVideo); } catch (_) {}
@@ -886,18 +849,16 @@ function closeAllModals() {
   }
 }
 
-settingsBtn.addEventListener('click', () => openModal(settingsModal));
-advancedSearchBtn.addEventListener('click', () => openModal(advancedSearchModal));
-modalOverlay.addEventListener('click', (e) => {
-  if (e.target === modalOverlay) {
-    closeAllModals();
-  }
+settingsBtn?.addEventListener('click', () => openModal(settingsModal));
+advancedSearchBtn?.addEventListener('click', () => openModal(advancedSearchModal));
+openEnvioModalBtn?.addEventListener('click', () => openModal(envioModal));
+
+modalOverlay?.addEventListener('click', (e) => {
+  if (e.target === modalOverlay) closeAllModals();
 });
-$$('.close-modal-btn').forEach(btn => {
-  btn.addEventListener('click', closeAllModals);
-});
-// === ENVÍO GRUPAL / MASIVO ===
-// Referencias
+$$('.close-modal-btn').forEach(btn => btn.addEventListener('click', closeAllModals));
+
+// === ENVÍO GRUPAL / MASIVO (lógica) ===
 const envio = {
   lista: [],
   tablaBody: document.querySelector('#tabla-envios tbody'),
@@ -910,7 +871,6 @@ const envio = {
   btnConfirmar: document.querySelector('#confirmar-envio-btn'),
 };
 
-// Render de la tabla
 function renderEnvioTabla() {
   if (!envio.tablaBody) return;
   envio.tablaBody.innerHTML = '';
@@ -937,88 +897,93 @@ function renderEnvioTabla() {
   });
 }
 
-// Agregar un expediente a la lista (con de-duplicación)
 function addExpToEnvioLista({ codigo, numero, letra, anio }) {
   if (!codigo || !numero || !letra || !anio) return;
-
-  const key = `${codigo}-${numero}-${letra.toUpperCase()}-${anio}`;
+  const key = `${codigo}-${numero}-${(letra || '').toUpperCase()}-${anio}`.toUpperCase();
   const exists = envio.lista.some(x =>
-    `${x.codigo}-${x.numero}-${x.letra}-${x.anio}`.toUpperCase() === key.toUpperCase()
+    `${x.codigo}-${x.numero}-${x.letra}-${x.anio}`.toUpperCase() === key
   );
   if (exists) return; // evitar duplicados exactos
-
-  envio.lista.push({
-    codigo,
-    numero,
-    letra: (letra || '').toUpperCase(),
-    anio
-  });
+  envio.lista.push({ codigo, numero, letra: (letra || '').toUpperCase(), anio });
   renderEnvioTabla();
 }
 
-// Click en “Agregar” (manual)
-if (envio.btnAgregar) {
-  envio.btnAgregar.addEventListener('click', () => {
-    addExpToEnvioLista({
-      codigo: (envio.codigo?.value || '').trim(),
-      numero: (envio.numero?.value || '').trim(),
-      letra:  (envio.letra?.value  || '').trim(),
-      anio:   (envio.anio?.value   || '').trim(),
-    });
-    if (envio.codigo) envio.codigo.value = '';
-    if (envio.numero) envio.numero.value = '';
-    if (envio.letra)  envio.letra.value  = '';
-    if (envio.anio)   envio.anio.value   = '';
-    envio.codigo?.focus();
+// Botón Agregar manual
+envio.btnAgregar?.addEventListener('click', () => {
+  addExpToEnvioLista({
+    codigo: (envio.codigo?.value || '').trim(),
+    numero: (envio.numero?.value || '').trim(),
+    letra:  (envio.letra?.value  || '').trim(),
+    anio:   (envio.anio?.value   || '').trim(),
   });
-}
+  if (envio.codigo) envio.codigo.value = '';
+  if (envio.numero) envio.numero.value = '';
+  if (envio.letra)  envio.letra.value  = '';
+  if (envio.anio)   envio.anio.value   = '';
+  envio.codigo?.focus();
+});
 
-// Confirmar envío → crea N registros "Enviamos" con oficina seleccionada
-if (envio.btnConfirmar) {
-  envio.btnConfirmar.addEventListener('click', async () => {
-    const oficina = envio.oficina?.value || '';
-    if (!oficina) return alert('Seleccioná una oficina de destino.');
-    if (!envio.lista.length) return alert('No hay expedientes cargados.');
+// Confirmar envío en lote
+envio.btnConfirmar?.addEventListener('click', async () => {
+  const oficina = envio.oficina?.value || '';
+  if (!oficina) return alert('Seleccioná una oficina de destino.');
+  if (!envio.lista.length) return alert('No hay expedientes cargados.');
 
-    const ok = confirm(`¿Confirmar envío de ${envio.lista.length} expedientes a "${oficina}"?`);
-    if (!ok) return;
+  const ok = confirm(`¿Confirmar envío de ${envio.lista.length} expedientes a "${oficina}"?`);
+  if (!ok) return;
 
-    try {
-      const batch = db.batch();
-      const autor = state.userProfile?.apodo || state.currentUser?.email || 'sistema';
+  try {
+    const batch = db.batch();
+    const autor = state.userProfile?.apodo || state.currentUser?.email || 'sistema';
 
-      envio.lista.forEach(exp => {
-        const ref = db.collection('expedientes').doc();
-        batch.set(ref, {
-          codigo: exp.codigo,
-          numero: exp.numero,
-          letra: exp.letra,
-          anio: exp.anio,
-          movimiento: 'Enviamos',
-          oficina,
-          autor,
-          createdAt: Timestamp.now()
-        });
+    envio.lista.forEach(exp => {
+      const ref = db.collection('expedientes').doc();
+      batch.set(ref, {
+        codigo: exp.codigo,
+        numero: exp.numero,
+        letra: exp.letra,
+        anio: exp.anio,
+        movimiento: 'Enviamos',
+        oficina,
+        autor,
+        createdAt: Timestamp.now()
       });
+    });
 
-      await batch.commit();
-      alert(`Se enviaron ${envio.lista.length} expedientes a ${oficina}.`);
-      envio.lista = [];
-      renderEnvioTabla();
-      envio.codigo?.focus();
-    } catch (err) {
-      console.error('Error en envío grupal:', err);
-      alert('Error al registrar los envíos. Revisá la consola para más detalles.');
+    await batch.commit();
+    alert(`Se enviaron ${envio.lista.length} expedientes a ${oficina}.`);
+    envio.lista = [];
+    renderEnvioTabla();
+    envio.codigo?.focus();
+  } catch (err) {
+    console.error('Error en envío grupal:', err);
+    alert('Error al registrar los envíos. Revisá la consola para más detalles.');
+  }
+});
+
+// --- Atajos útiles ---
+document.addEventListener('keydown', (e) => {
+  const inInput = /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '');
+
+  if (e.key === 'F2') {
+    e.preventDefault();
+    switchTab('carga');
+    initScanner('carga');
+  }
+
+  if (e.ctrlKey && e.key === 'Enter') {
+    if (!inInput || (cargaSection && !cargaSection.classList.contains('hidden'))) {
+      e.preventDefault();
+      expedienteForm?.requestSubmit?.();
     }
-  });
-}
+  }
 
-// Inicializar la app en la pestaña de carga
+  if (e.ctrlKey && e.key.toLowerCase() === 'f') {
+    e.preventDefault();
+    switchTab('busqueda');
+    document.querySelector('#search-numero')?.focus();
+  }
+});
+
+// Inicializar en CARGA
 switchTab('carga');
-
-
-
-
-
-
-
