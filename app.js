@@ -456,6 +456,10 @@ function distributeTo(prefix, raw, srcEl) {
 
   const [, c, n, l, a] = m;
   fillSection(prefix, c, n, l, a);
+    // Si estamos en ENVÍO, auto-agregar a la lista
+  if (prefix === 'envio') {
+    addExpToEnvioLista({ codigo: c, numero: n, letra: l, anio: a });
+  }
 
   // ⚙️ NO limpiar si la lectura cayó en el propio campo "codigo"
   const codeId = `${prefix}-codigo`;
@@ -467,8 +471,11 @@ function distributeTo(prefix, raw, srcEl) {
   }
 
   // foco siguiente
-  const next = (prefix === 'carga') ? '#carga-extracto' : '#search-extracto';
+  const next = (prefix === 'carga') ? '#carga-extracto'
+              : (prefix === 'search') ? '#search-extracto'
+              : '#envio-numero';
   document.querySelector(next)?.focus();
+;
   
 // Si estoy en BÚSQUEDA, disparo la búsqueda automáticamente
 if (prefix === 'search') {
@@ -518,9 +525,11 @@ function attachScanHandlersFor(prefix) {
   });
 }
 
-// Activar para ambas secciones (CARGA y BÚSQUEDA)
+// Activar para CARGA, BÚSQUEDA y ENVÍO
 attachScanHandlersFor('carga');
 attachScanHandlersFor('search');
+attachScanHandlersFor('envio');
+
 
 
 // --- Lógica de Etiquetas y PDF ---
@@ -869,9 +878,126 @@ modalOverlay.addEventListener('click', (e) => {
 $$('.close-modal-btn').forEach(btn => {
   btn.addEventListener('click', closeAllModals);
 });
+// === ENVÍO GRUPAL / MASIVO ===
+// Referencias
+const envio = {
+  lista: [],
+  tablaBody: document.querySelector('#tabla-envios tbody'),
+  codigo: document.querySelector('#envio-codigo'),
+  numero: document.querySelector('#envio-numero'),
+  letra:  document.querySelector('#envio-letra'),
+  anio:   document.querySelector('#envio-anio'),
+  oficina: document.querySelector('#envio-oficina-select'),
+  btnAgregar: document.querySelector('#agregar-expediente'),
+  btnConfirmar: document.querySelector('#confirmar-envio-btn'),
+};
+
+// Render de la tabla
+function renderEnvioTabla() {
+  if (!envio.tablaBody) return;
+  envio.tablaBody.innerHTML = '';
+  envio.lista.forEach((exp, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${exp.codigo}</td>
+      <td>${exp.numero}</td>
+      <td>${exp.letra}</td>
+      <td>${exp.anio}</td>
+      <td><button class="btn btn-sm btn-danger btn-eliminar" data-idx="${idx}" title="Quitar">❌</button></td>
+    `;
+    envio.tablaBody.appendChild(tr);
+  });
+
+  envio.tablaBody.querySelectorAll('.btn-eliminar').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.currentTarget.dataset.idx, 10);
+      if (!isNaN(idx)) {
+        envio.lista.splice(idx, 1);
+        renderEnvioTabla();
+      }
+    });
+  });
+}
+
+// Agregar un expediente a la lista (con de-duplicación)
+function addExpToEnvioLista({ codigo, numero, letra, anio }) {
+  if (!codigo || !numero || !letra || !anio) return;
+
+  const key = `${codigo}-${numero}-${letra.toUpperCase()}-${anio}`;
+  const exists = envio.lista.some(x =>
+    `${x.codigo}-${x.numero}-${x.letra}-${x.anio}`.toUpperCase() === key.toUpperCase()
+  );
+  if (exists) return; // evitar duplicados exactos
+
+  envio.lista.push({
+    codigo,
+    numero,
+    letra: (letra || '').toUpperCase(),
+    anio
+  });
+  renderEnvioTabla();
+}
+
+// Click en “Agregar” (manual)
+if (envio.btnAgregar) {
+  envio.btnAgregar.addEventListener('click', () => {
+    addExpToEnvioLista({
+      codigo: (envio.codigo?.value || '').trim(),
+      numero: (envio.numero?.value || '').trim(),
+      letra:  (envio.letra?.value  || '').trim(),
+      anio:   (envio.anio?.value   || '').trim(),
+    });
+    if (envio.codigo) envio.codigo.value = '';
+    if (envio.numero) envio.numero.value = '';
+    if (envio.letra)  envio.letra.value  = '';
+    if (envio.anio)   envio.anio.value   = '';
+    envio.codigo?.focus();
+  });
+}
+
+// Confirmar envío → crea N registros "Enviamos" con oficina seleccionada
+if (envio.btnConfirmar) {
+  envio.btnConfirmar.addEventListener('click', async () => {
+    const oficina = envio.oficina?.value || '';
+    if (!oficina) return alert('Seleccioná una oficina de destino.');
+    if (!envio.lista.length) return alert('No hay expedientes cargados.');
+
+    const ok = confirm(`¿Confirmar envío de ${envio.lista.length} expedientes a "${oficina}"?`);
+    if (!ok) return;
+
+    try {
+      const batch = db.batch();
+      const autor = state.userProfile?.apodo || state.currentUser?.email || 'sistema';
+
+      envio.lista.forEach(exp => {
+        const ref = db.collection('expedientes').doc();
+        batch.set(ref, {
+          codigo: exp.codigo,
+          numero: exp.numero,
+          letra: exp.letra,
+          anio: exp.anio,
+          movimiento: 'Enviamos',
+          oficina,
+          autor,
+          createdAt: Timestamp.now()
+        });
+      });
+
+      await batch.commit();
+      alert(`Se enviaron ${envio.lista.length} expedientes a ${oficina}.`);
+      envio.lista = [];
+      renderEnvioTabla();
+      envio.codigo?.focus();
+    } catch (err) {
+      console.error('Error en envío grupal:', err);
+      alert('Error al registrar los envíos. Revisá la consola para más detalles.');
+    }
+  });
+}
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
+
 
 
 
