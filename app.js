@@ -457,9 +457,26 @@ function distributeTo(prefix, raw, srcEl) {
   const [, c, n, l, a] = m;
   fillSection(prefix, c, n, l, a);
     // Si estamos en ENVÍO, auto-agregar a la lista
-  if (prefix === 'envio') {
-    addExpToEnvioLista({ codigo: c, numero: n, letra: l, anio: a });
-  }
+ // ⬇️ Auto-agregar y limpiar campos en Envío Grupal
+if (prefix === 'envio') {
+  addExpToEnvioLista({ codigo: c, numero: n, letra: l, anio: a });
+
+  // limpiar los 4 campos para permitir el siguiente escaneo
+  const ec = document.querySelector('#envio-codigo');
+  const en = document.querySelector('#envio-numero');
+  const el = document.querySelector('#envio-letra');
+  const ea = document.querySelector('#envio-anio');
+
+  // pequeño defer para no cortar el buffer del escáner si aún está enviando
+  setTimeout(() => {
+    if (ec) ec.value = '';
+    if (en) en.value = '';
+    if (el) el.value = '';
+    if (ea) ea.value = '';
+    // volver a poner el foco donde escaneás normalmente
+    ec?.focus();
+  }, 30);
+}
 
   // ⚙️ NO limpiar si la lectura cayó en el propio campo "codigo"
   const codeId = `${prefix}-codigo`;
@@ -471,10 +488,11 @@ function distributeTo(prefix, raw, srcEl) {
   }
 
   // foco siguiente
-  const next = (prefix === 'carga') ? '#carga-extracto'
-              : (prefix === 'search') ? '#search-extracto'
-              : '#envio-numero';
-  document.querySelector(next)?.focus();
+const next = (prefix === 'carga') ? '#carga-extracto'
+            : (prefix === 'search') ? '#search-extracto'
+            : '#envio-codigo'; // para 'envio', volver a Código
+document.querySelector(next)?.focus();
+
 ;
   
 // Si estoy en BÚSQUEDA, disparo la búsqueda automáticamente
@@ -997,6 +1015,7 @@ if (envio.btnConfirmar) {
 
 // Inicializar la app en la pestaña de carga
 switchTab('carga');
+
 
 
 
