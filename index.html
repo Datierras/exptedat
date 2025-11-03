@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestión de Expedientes</title>
 
-  <!-- Tema antes de cargar CSS -->
+  <!-- Aplicar tema antes de pintar -->
   <script>
     document.documentElement.setAttribute(
       'data-theme',
@@ -13,17 +13,17 @@
     );
   </script>
 
-  <link rel="stylesheet" href="style.css?v=sr4" />
+  <link rel="stylesheet" href="style.css?v=sr5" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Librerías que ya usabas -->
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
+  <!-- ================== LOGIN ================== -->
   <div id="auth-container">
     <div class="login-card glass-panel">
       <h2>Gestión de Expedientes</h2>
@@ -37,29 +37,28 @@
     </div>
   </div>
 
+  <!-- ================== APP ================== -->
   <main id="app-container" class="hidden">
     <header class="topbar">
       <h1>Gestión de Expedientes</h1>
-      <!-- Botón SIN emoji; el SVG lo inyecta app.js -->
-      <button id="theme-toggle" class="icon-btn" title="Cambiar tema" aria-label="Cambiar tema"></button>
-      <button id="settings-btn" class="icon-btn">⚙️</button>
+      <button id="theme-toggle" class="icon-btn" title="Cambiar tema"></button>
+      <button id="settings-btn" class="icon-btn" title="Configuración">⚙️</button>
     </header>
 
-    <!-- Tabs principales -->
     <nav class="tabs">
       <button id="tab-carga" class="tab-btn active">CARGA</button>
       <button id="tab-etiquetas" class="tab-btn">ETIQUETAS</button>
       <button id="tab-busqueda" class="tab-btn">BÚSQUEDA</button>
     </nav>
 
-    <!-- ====================== CARGA ====================== -->
+    <!-- ============= CARGA ============= -->
     <section id="carga-section" class="content-section">
       <form id="expediente-form" class="main-form">
         <div class="form-grid">
-          <input type="text" id="carga-codigo" placeholder="Código" required />
+          <input type="text"   id="carga-codigo" placeholder="Código" required />
           <input type="number" id="carga-numero" placeholder="Número" required />
-          <input type="text" id="carga-letra" placeholder="Letra" required />
-          <input type="number" id="carga-anio" placeholder="Año" required />
+          <input type="text"   id="carga-letra"  placeholder="Letra" required />
+          <input type="number" id="carga-anio"   placeholder="Año" required />
         </div>
 
         <textarea id="carga-extracto" placeholder="Extracto..." rows="3" required></textarea>
@@ -87,6 +86,7 @@
           <label><input type="radio" name="movimiento" value="Enviamos" /> Enviamos</label>
         </div>
 
+        <!-- Nomenclatura (acordeón) -->
         <div class="custom-dropdown">
           <button type="button" class="dropdown-toggle">
             Nomenclatura <span class="arrow">▶</span>
@@ -95,17 +95,17 @@
             <input type="text" id="nomen-circ" placeholder="Circunscripción" />
             <input type="text" id="nomen-secc" placeholder="Sección" />
             <input type="text" id="nomen-chac" placeholder="Chacra" />
-            <input type="text" id="nomen-lch" placeholder="L. CH." />
+            <input type="text" id="nomen-lch"  placeholder="L. CH." />
             <input type="text" id="nomen-quin" placeholder="Quinta" />
-            <input type="text" id="nomen-lqt" placeholder="L. Qt." />
+            <input type="text" id="nomen-lqt"  placeholder="L. Qt." />
             <input type="text" id="nomen-frac" placeholder="Fracción" />
-            <input type="text" id="nomen-lfr" placeholder="L. Fr." />
+            <input type="text" id="nomen-lfr"  placeholder="L. Fr." />
             <input type="text" id="nomen-manz" placeholder="Manzana" />
-            <input type="text" id="nomen-lmz" placeholder="L. Mz." />
+            <input type="text" id="nomen-lmz"  placeholder="L. Mz." />
             <input type="text" id="nomen-parc" placeholder="Parcela" />
-            <input type="text" id="nomen-lpc" placeholder="L. Pc." />
-            <input type="text" id="part-prov" placeholder="Partida Provincial" />
-            <input type="text" id="part-mun" placeholder="Partida Municipal" />
+            <input type="text" id="nomen-lpc"  placeholder="L. Pc." />
+            <input type="text" id="part-prov"  placeholder="Partida Provincial" />
+            <input type="text" id="part-mun"   placeholder="Partida Municipal" />
           </div>
         </div>
 
@@ -118,23 +118,28 @@
       </form>
     </section>
 
-    <!-- ====================== ETIQUETAS ====================== -->
+    <!-- ============= ETIQUETAS (TAB NUEVO) ============= -->
     <section id="etiquetas-section" class="content-section hidden">
       <form id="labels-form" class="main-form">
+        <p class="secondary-text">
+          Cargá varias combinaciones de <strong>Código, Número, Letra, Año</strong> y
+          agregalas a la lista. Más adelante se generará un PDF mosaico optimizado (3×N por hoja).
+        </p>
+
         <div class="form-grid">
-          <input type="text" id="lbl-codigo" placeholder="Código" />
-          <input type="number" id="lbl-numero" placeholder="Número" />
-          <input type="text" id="lbl-letra" placeholder="Letra" maxlength="1" oninput="this.value=this.value.toUpperCase()" />
-          <input type="number" id="lbl-anio" placeholder="Año" maxlength="4" oninput="this.value=this.value.slice(0,4)" />
+          <input type="text"   id="labels-codigo" placeholder="Código (ej: 4078)" />
+          <input type="number" id="labels-numero" placeholder="Número" />
+          <input type="text"   id="labels-letra"  placeholder="Letra (I)" maxlength="1" oninput="this.value=this.value.toUpperCase()" />
+          <input type="number" id="labels-anio"   placeholder="Año (2025)" maxlength="4" oninput="this.value=this.value.slice(0,4)" />
         </div>
 
         <div class="action-buttons">
-          <button type="button" id="lbl-add-btn">+ Agregar a la lista</button>
-          <button type="button" id="lbl-clear-btn">Vaciar lista</button>
+          <button type="button" id="labels-add-btn">+ Agregar a la lista</button>
+          <button type="button" id="labels-clear-btn">Vaciar lista</button>
         </div>
 
-        <div class="table-wrap" style="margin-top:8px;">
-          <table id="lbl-table">
+        <div class="table-wrap" style="margin-top:6px;">
+          <table id="labels-table">
             <thead>
               <tr>
                 <th>Código</th>
@@ -148,22 +153,20 @@
           </table>
         </div>
 
-        <div class="action-buttons" style="margin-top:12px;">
-          <button type="button" id="lbl-generate-pdf-btn" class="btn btn-primary">
-            Generar etiquetas (PDF)
-          </button>
+        <div class="action-buttons">
+          <button type="button" id="labels-generate-pdf">Generar etiquetas (PDF)</button>
         </div>
       </form>
     </section>
 
-    <!-- ====================== BÚSQUEDA ====================== -->
+    <!-- ============= BÚSQUEDA ============= -->
     <section id="busqueda-section" class="content-section hidden">
       <form id="search-form" class="main-form">
         <div class="form-grid">
-          <input type="text" id="search-codigo" placeholder="Código (ej: 4078)" />
+          <input type="text"   id="search-codigo" placeholder="Código (ej: 4078)" />
           <input type="number" id="search-numero" placeholder="Número (obligatorio)" />
-          <input type="text" id="search-letra" placeholder="Letra (ej: I)" maxlength="1" oninput="this.value=this.value.toUpperCase()" />
-          <input type="number" id="search-anio" placeholder="Año (ej: 2025)" maxlength="4" oninput="this.value=this.value.slice(0,4)" />
+          <input type="text"   id="search-letra"  placeholder="Letra (ej: I)" maxlength="1" oninput="this.value=this.value.toUpperCase()" />
+          <input type="number" id="search-anio"   placeholder="Año (ej: 2025)" maxlength="4" oninput="this.value=this.value.slice(0,4)" />
         </div>
 
         <textarea id="search-extracto" placeholder="Extracto (opcional)"></textarea>
@@ -180,7 +183,7 @@
     </section>
   </main>
 
-  <!-- ====================== MODALES ====================== -->
+  <!-- ================== MODALES ================== -->
   <div id="modal-overlay" class="hidden">
     <!-- Configuración -->
     <div id="settings-modal" class="modal-content glass-panel hidden">
@@ -203,7 +206,7 @@
         <input type="text" id="adv-nomen-manz" placeholder="Manzana" />
         <input type="text" id="adv-nomen-parc" placeholder="Parcela" />
         <input type="text" id="adv-part-prov" placeholder="Partida Provincial" />
-        <input type="text" id="adv-part-mun" placeholder="Partida Municipal" />
+        <input type="text" id="adv-part-mun"  placeholder="Partida Municipal" />
         <div class="modal-actions">
           <button type="submit">Buscar</button>
           <button type="button" class="close-modal-btn">Cerrar</button>
@@ -236,19 +239,22 @@
       </div>
     </div>
 
-    <!-- Envío grupal -->
+    <!-- Envío grupal (modal) -->
     <div id="envio-modal" class="modal-content glass-panel hidden">
       <h2>Envío grupal de expedientes</h2>
+
       <div class="form-grid">
         <input id="envio-codigo" type="text" placeholder="Código" autocomplete="off" />
         <input id="envio-numero" type="text" placeholder="Número" autocomplete="off" />
-        <input id="envio-letra" type="text" placeholder="Letra" autocomplete="off" />
-        <input id="envio-anio" type="text" placeholder="Año" autocomplete="off" />
+        <input id="envio-letra"  type="text" placeholder="Letra"  autocomplete="off" />
+        <input id="envio-anio"   type="text" placeholder="Año"    autocomplete="off" />
       </div>
+
       <div class="modal-actions" style="justify-content:flex-start;gap:8px;">
         <button id="agregar-expediente" type="button">Agregar</button>
         <span style="opacity:.7;">(También se agrega al escanear)</span>
       </div>
+
       <div class="table-wrap" style="margin-top:8px;">
         <table id="tabla-envios">
           <thead>
@@ -263,26 +269,28 @@
           <tbody></tbody>
         </table>
       </div>
+
       <div class="form-row" style="margin-top:10px;">
         <label for="envio-oficina-select" style="margin-right:6px;">Enviar a oficina:</label>
         <select id="envio-oficina-select">
           <option value="">Seleccionar...</option>
-          <option>Administración General</option>
-          <option>D.G. de Ingreso de Tierras</option>
-          <option>D.G. de Escrituración Familiar</option>
-          <option>D.G. de Regularización Dominial</option>
-          <option>D.G. de Programa de Tierras</option>
-          <option>C.G.P. Legal, Administrativo e Institucional</option>
-          <option>C.G.P. de Hábitat, Vivienda e Integración Urbana</option>
-          <option>C.G.P. Abordate Territorial</option>
-          <option>C.G.P. de Obras Particulares y Catastro</option>
-          <option>C.G.P. de Gerencia de Proyectos</option>
-          <option>Contaduría</option>
-          <option>Jefatura de Compras y Contrataciones</option>
-          <option>Tesorería</option>
-          <option>Mesa de Entradas</option>
+          <option value="Administración General">Administración General</option>
+          <option value="D.G. de Ingreso de Tierras">D.G. de Ingreso de Tierras</option>
+          <option value="D.G. de Escrituración Familiar">D.G. de Escrituración Familiar</option>
+          <option value="D.G. de Regularización Dominial">D.G. de Regularización Dominial</option>
+          <option value="D.G. de Programa de Tierras">D.G. de Programa de Tierras</option>
+          <option value="C.G.P. Legal, Administrativo e Institucional">C.G.P. Legal, Administrativo e Institucional</option>
+          <option value="C.G.P. de Hábitat, Vivienda e Integración Urbana">C.G.P. de Hábitat, Vivienda e Integración Urbana</option>
+          <option value="C.G.P. Abordate Territorial">C.G.P. Abordate Territorial</option>
+          <option value="C.G.P. de Obras Particulares y Catastro">C.G.P. de Obras Particulares y Catastro</option>
+          <option value="C.G.P. de Gerencia de Proyectos">C.G.P. de Gerencia de Proyectos</option>
+          <option value="Contaduría">Contaduría</option>
+          <option value="Jefatura de Compras y Contrataciones">Jefatura de Compras y Contrataciones</option>
+          <option value="Tesorería">Tesorería</option>
+          <option value="Mesa de Entradas">Mesa de Entradas</option>
         </select>
       </div>
+
       <div class="modal-actions">
         <button id="confirmar-envio-btn" type="button">Confirmar envío</button>
         <button type="button" class="close-modal-btn">Cerrar</button>
@@ -292,10 +300,19 @@
 
   <button id="logout-btn" class="logout-btn hidden">Salir</button>
 
-  <!-- Firebase -->
+  <!-- Firebase compat (API estilo v8) -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <script src="app.js"></script>
+
+  <!-- Módulos (orden importante) -->
+  <script type="module" src="./js/event-bus.js"></script>
+  <script type="module" src="./js/dom.js"></script>
+  <script type="module" src="./js/barcode.js"></script>
+  <script type="module" src="./js/theme.js"></script>
+  <script type="module" src="./js/modals.js"></script>
+  <script type="module" src="./js/firebase-compat.js"></script>
+  <script type="module" src="./js/store.js"></script>
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>
