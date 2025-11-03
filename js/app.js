@@ -3,7 +3,7 @@
 
 import { initThemeToggle } from './theme.js';
 import { openModal, closeAllModals, hookModalCloseButtons } from './modals.js';
-import { firebaseInit, auth, db } from './firebase-compat.js';
+import { auth, db, Timestamp } from './firebase-compat.js';
 import { initLabelsTab } from './labels.js';
 
 // Utilidades DOM
