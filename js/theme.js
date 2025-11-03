@@ -1,30 +1,54 @@
-import { $ } from './dom.js';
+// /js/theme.js
+// Manejo de tema claro/oscuro con icono monocromo y persistencia en localStorage.
 
-export function initTheme() {
-  const btn = $('#theme-toggle');
+const THEME_KEY = 'theme';
+const LIGHT = 'light';
+const DARK = 'dark';
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('theme-toggle');
   if (!btn) return;
 
-  const root = document.documentElement;
-  const saved = localStorage.getItem('theme') || 'light';
-  root.setAttribute('data-theme', saved);
-  btn.innerHTML = saved === 'dark' ? moon() : sun();
-  btn.style.color = 'var(--text-color)';
+  // Icono SVG monocromo para evitar emojis amarillos
+  const sun = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4V2M12 22v-2M4.22 4.22 5.64 5.64M18.36 18.36l1.41 1.41M2 12h2M20 12h2M4.22 19.78 5.64 18.36M18.36 5.64l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/></svg>';
+  const moon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" stroke-width="2" fill="none"/></svg>';
 
-  btn.onclick = () => {
-    const cur = root.getAttribute('data-theme') || 'light';
-    const next = cur === 'dark' ? 'light' : 'dark';
-    root.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-    btn.innerHTML = next === 'dark' ? moon() : sun();
-  };
+  btn.innerHTML = theme === DARK ? sun : moon; // si está oscuro muestro Sol (para pasar a claro)
+  btn.setAttribute('aria-label', theme === DARK ? 'Cambiar a claro' : 'Cambiar a oscuro');
 }
 
-const sun = () => `
-<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-<line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-<line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-<line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
-const moon = () => `
-<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+export function getSavedTheme() {
+  return localStorage.getItem(THEME_KEY) || LIGHT;
+}
+
+export function setTheme(theme) {
+  localStorage.setItem(THEME_KEY, theme);
+  applyTheme(theme);
+}
+
+export function toggleTheme() {
+  const next = getSavedTheme() === DARK ? LIGHT : DARK;
+  setTheme(next);
+}
+
+/**
+ * Inicializa el botón #theme-toggle y aplica el tema guardado.
+ * Exportamos con este nombre porque es lo que importa app.js.
+ */
+export function initThemeToggle() {
+  const current = getSavedTheme();
+  applyTheme(current);
+  const btn = document.getElementById('theme-toggle');
+  if (btn && !btn.dataset.bound) {
+    btn.addEventListener('click', toggleTheme);
+    btn.dataset.bound = '1';
+  }
+}
+
+// También exporto un init por si en algún momento preferís otro nombre
+export function initTheme() {
+  initThemeToggle();
+}
+
+export default { initThemeToggle, initTheme, getSavedTheme, setTheme, toggleTheme };
