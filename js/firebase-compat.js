@@ -1,12 +1,14 @@
 // /js/firebase-compat.js
-// Inicializa Firebase usando el SDK compat v9 DESDE CDN y exporta auth, db y Timestamp
+// Usa Firebase compat que ya cargás desde index.html (global window.firebase)
 
-// Cargamos los módulos compat desde CDN (import ES Modules)
-import "https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js";
-import "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js";
-import "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js";
+if (typeof window.firebase === 'undefined') {
+  throw new Error(
+    'Firebase no está disponible. Asegurate de incluir en index.html ' +
+    'los scripts compat: app-compat, auth-compat y firestore-compat antes de /js/*.js'
+  );
+}
 
-// Config de tu proyecto (la tuya)
+// Tu config
 const firebaseConfig = {
   apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
   authDomain: "exptcoord.firebaseapp.com",
@@ -17,16 +19,14 @@ const firebaseConfig = {
   measurementId: "G-94PRRLFZV4"
 };
 
-// Evita doble init en HMR/recargas
+// Inicializá solo una vez
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
-// Exports con nombre que usa el resto de la app
 const auth = firebase.auth();
 const db = firebase.firestore();
 const Timestamp = firebase.firestore.Timestamp;
 
 export { auth, db, Timestamp };
-// (opcional) export default por conveniencia
 export default { auth, db, Timestamp };
