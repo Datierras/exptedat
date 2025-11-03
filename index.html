@@ -40,7 +40,8 @@
   <main id="app-container" class="hidden">
     <header class="topbar">
       <h1>Gestión de Expedientes</h1>
-      <button id="theme-toggle" class="icon-btn" title="Cambiar tema">🌙</button>
+      <!-- Botón SIN emoji; el SVG lo inyecta app.js -->
+      <button id="theme-toggle" class="icon-btn" title="Cambiar tema" aria-label="Cambiar tema"></button>
       <button id="settings-btn" class="icon-btn">⚙️</button>
     </header>
 
@@ -235,7 +236,7 @@
       </div>
     </div>
 
-    <!-- ========= Envío grupal ========= -->
+    <!-- Envío grupal -->
     <div id="envio-modal" class="modal-content glass-panel hidden">
       <h2>Envío grupal de expedientes</h2>
       <div class="form-grid">
