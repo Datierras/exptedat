@@ -16,7 +16,10 @@
   <link rel="stylesheet" href="style.css?v=sr4" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap"
+    rel="stylesheet"
+  />
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -41,8 +44,10 @@
       <button id="settings-btn" class="icon-btn">⚙️</button>
     </header>
 
+    <!-- Tabs principales -->
     <nav class="tabs">
       <button id="tab-carga" class="tab-btn active">CARGA</button>
+      <button id="tab-etiquetas" class="tab-btn">ETIQUETAS</button>
       <button id="tab-busqueda" class="tab-btn">BÚSQUEDA</button>
     </nav>
 
@@ -107,8 +112,45 @@
           <button type="button" id="generate-label-btn">Generar etiqueta</button>
           <button type="button" id="scan-carga-btn">Escanear</button>
           <button type="submit" id="save-expediente-btn">Guardar expediente</button>
-          <!-- Abre el modal de Envío grupal -->
           <button type="button" id="open-envio-modal-btn">Envío grupal</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ====================== ETIQUETAS ====================== -->
+    <section id="etiquetas-section" class="content-section hidden">
+      <form id="labels-form" class="main-form">
+        <div class="form-grid">
+          <input type="text" id="lbl-codigo" placeholder="Código" />
+          <input type="number" id="lbl-numero" placeholder="Número" />
+          <input type="text" id="lbl-letra" placeholder="Letra" maxlength="1" oninput="this.value=this.value.toUpperCase()" />
+          <input type="number" id="lbl-anio" placeholder="Año" maxlength="4" oninput="this.value=this.value.slice(0,4)" />
+        </div>
+
+        <div class="action-buttons">
+          <button type="button" id="lbl-add-btn">+ Agregar a la lista</button>
+          <button type="button" id="lbl-clear-btn">Vaciar lista</button>
+        </div>
+
+        <div class="table-wrap" style="margin-top:8px;">
+          <table id="lbl-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Número</th>
+                <th>Letra</th>
+                <th>Año</th>
+                <th>Quitar</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="action-buttons" style="margin-top:12px;">
+          <button type="button" id="lbl-generate-pdf-btn" class="btn btn-primary">
+            Generar etiquetas (PDF)
+          </button>
         </div>
       </form>
     </section>
@@ -179,7 +221,7 @@
       </div>
     </div>
 
-    <!-- Etiqueta -->
+    <!-- Etiqueta individual -->
     <div id="label-modal" class="modal-content glass-panel hidden">
       <h2>Etiqueta Generada</h2>
       <div id="label-content">
@@ -193,22 +235,19 @@
       </div>
     </div>
 
-    <!-- ========= NUEVO: Envío grupal (como modal) ========= -->
+    <!-- ========= Envío grupal ========= -->
     <div id="envio-modal" class="modal-content glass-panel hidden">
       <h2>Envío grupal de expedientes</h2>
-
       <div class="form-grid">
-        <input id="envio-codigo"  type="text" placeholder="Código"  autocomplete="off" />
-        <input id="envio-numero"  type="text" placeholder="Número"  autocomplete="off" />
-        <input id="envio-letra"   type="text" placeholder="Letra"   autocomplete="off" />
-        <input id="envio-anio"    type="text" placeholder="Año"     autocomplete="off" />
+        <input id="envio-codigo" type="text" placeholder="Código" autocomplete="off" />
+        <input id="envio-numero" type="text" placeholder="Número" autocomplete="off" />
+        <input id="envio-letra" type="text" placeholder="Letra" autocomplete="off" />
+        <input id="envio-anio" type="text" placeholder="Año" autocomplete="off" />
       </div>
-
       <div class="modal-actions" style="justify-content:flex-start;gap:8px;">
         <button id="agregar-expediente" type="button">Agregar</button>
         <span style="opacity:.7;">(También se agrega al escanear)</span>
       </div>
-
       <div class="table-wrap" style="margin-top:8px;">
         <table id="tabla-envios">
           <thead>
@@ -223,44 +262,39 @@
           <tbody></tbody>
         </table>
       </div>
-
       <div class="form-row" style="margin-top:10px;">
         <label for="envio-oficina-select" style="margin-right:6px;">Enviar a oficina:</label>
         <select id="envio-oficina-select">
           <option value="">Seleccionar...</option>
-          <option value="Administración General">Administración General</option>
-          <option value="D.G. de Ingreso de Tierras">D.G. de Ingreso de Tierras</option>
-          <option value="D.G. de Escrituración Familiar">D.G. de Escrituración Familiar</option>
-          <option value="D.G. de Regularización Dominial">D.G. de Regularización Dominial</option>
-          <option value="D.G. de Programa de Tierras">D.G. de Programa de Tierras</option>
-          <option value="C.G.P. Legal, Administrativo e Institucional">C.G.P. Legal, Administrativo e Institucional</option>
-          <option value="C.G.P. de Hábitat, Vivienda e Integración Urbana">C.G.P. de Hábitat, Vivienda e Integración Urbana</option>
-          <option value="C.G.P. Abordate Territorial">C.G.P. Abordate Territorial</option>
-          <option value="C.G.P. de Obras Particulares y Catastro">C.G.P. de Obras Particulares y Catastro</option>
-          <option value="C.G.P. de Gerencia de Proyectos">C.G.P. de Gerencia de Proyectos</option>
-          <option value="Contaduría">Contaduría</option>
-          <option value="Jefatura de Compras y Contrataciones">Jefatura de Compras y Contrataciones</option>
-          <option value="Tesorería">Tesorería</option>
-          <option value="Mesa de Entradas">Mesa de Entradas</option>
+          <option>Administración General</option>
+          <option>D.G. de Ingreso de Tierras</option>
+          <option>D.G. de Escrituración Familiar</option>
+          <option>D.G. de Regularización Dominial</option>
+          <option>D.G. de Programa de Tierras</option>
+          <option>C.G.P. Legal, Administrativo e Institucional</option>
+          <option>C.G.P. de Hábitat, Vivienda e Integración Urbana</option>
+          <option>C.G.P. Abordate Territorial</option>
+          <option>C.G.P. de Obras Particulares y Catastro</option>
+          <option>C.G.P. de Gerencia de Proyectos</option>
+          <option>Contaduría</option>
+          <option>Jefatura de Compras y Contrataciones</option>
+          <option>Tesorería</option>
+          <option>Mesa de Entradas</option>
         </select>
       </div>
-
       <div class="modal-actions">
         <button id="confirmar-envio-btn" type="button">Confirmar envío</button>
         <button type="button" class="close-modal-btn">Cerrar</button>
       </div>
     </div>
-    <!-- ========= / Envío grupal ========= -->
   </div>
 
   <button id="logout-btn" class="logout-btn hidden">Salir</button>
 
-  <!-- Firebase (compat v9, API estilo v8) -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-
-  <!-- IMPORTANTE: quitamos config.js porque la config está en app.js -->
   <script src="app.js"></script>
 </body>
 </html>
