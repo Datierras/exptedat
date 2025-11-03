@@ -1,25 +1,46 @@
-import { $, $$, toggle } from './dom.js';
+// /js/modals.js
+// Utilidades para manejar los modales de #modal-overlay
 
-let overlay, modals;
+const getOverlay = () => document.getElementById('modal-overlay');
 
-export function initModals() {
-  overlay = $('#modal-overlay');
-  modals  = $$('#modal-overlay .modal-content');
+export function openModal(modalEl) {
+  const overlay = getOverlay();
+  if (!overlay || !modalEl) return;
+  overlay.classList.remove('hidden');
+  modalEl.classList.remove('hidden');
+}
 
-  overlay?.addEventListener('click', (e) => {
-    if (e.target === overlay) closeAll();
+export function closeAllModals() {
+  const overlay = getOverlay();
+  if (overlay) overlay.classList.add('hidden');
+  document
+    .querySelectorAll('#modal-overlay .modal-content')
+    .forEach((m) => m.classList.add('hidden'));
+}
+
+/**
+ * Vincula el cierre por:
+ *  - Click en el fondo oscuro
+ *  - Cualquier botón con clase .close-modal-btn
+ *  - Esc (opcional)
+ */
+export function hookModalCloseButtons() {
+  const overlay = getOverlay();
+  if (!overlay) return;
+
+  // Cerrar al hacer click en el fondo
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeAllModals();
   });
 
-  $$('.close-modal-btn').forEach(btn => btn.addEventListener('click', closeAll));
-}
+  // Delegación: cualquier .close-modal-btn dentro del overlay
+  overlay.addEventListener('click', (e) => {
+    const btn = e.target.closest('.close-modal-btn');
+    if (btn) closeAllModals();
+  });
 
-export function open(el) {
-  if (!el) return;
-  toggle(overlay, true);
-  el.classList.remove('hidden');
-}
-
-export function closeAll() {
-  toggle(overlay, false);
-  modals.forEach(m => m.classList.add('hidden'));
+  // Cerrar con ESC
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAllModals();
+  });
 }
