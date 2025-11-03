@@ -172,14 +172,14 @@ auth.onAuthStateChanged(user => {
     if (themeToggle) {
       const savedTheme = localStorage.getItem('theme') || 'light';
       root.setAttribute('data-theme', savedTheme);
-      themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+      themeToggle.textContent = savedTheme === 'dark' ? '🌣' : '☾';
       themeToggle.onclick = null;
       themeToggle.addEventListener('click', () => {
         const current = root.getAttribute('data-theme') || 'light';
         const next = current === 'dark' ? 'light' : 'dark';
         root.setAttribute('data-theme', next);
         localStorage.setItem('theme', next);
-        themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+        themeToggle.textContent = next === 'dark' ? '🌣' : '☾';
       });
     }
   } else {
@@ -984,3 +984,4 @@ document.addEventListener('keydown', (e) => {
 
 // Inicializar en CARGA
 switchTab('carga');
+
