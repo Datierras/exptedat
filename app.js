@@ -1,4 +1,4 @@
-// app.js (FINAL con ENVÍO GRUPAL en modal + Firebase config)
+// app.js (FINAL con ENVÍO GRUPAL en modal + Firebase config + PDF minimalista)
 
 // --- Firebase config (TU PROYECTO) ---
 const firebaseConfig = {
@@ -11,7 +11,7 @@ const firebaseConfig = {
   measurementId: "G-94PRRLFZV4"
 };
 
-// --- Inicialización de Firebase (API v8 global) ---
+// --- Inicialización de Firebase (API v8 compat) ---
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -75,8 +75,8 @@ const advancedSearchBtn      = $('#advanced-search-btn');
 const advancedSearchForm     = $('#advanced-search-form');
 
 // NUEVO: Envío grupal (modal)
-const openEnvioModalBtn = $('#open-envio-modal-btn'); // botón en action-buttons
-const envioModal        = $('#envio-modal');           // modal con contenido de envío grupal
+const openEnvioModalBtn = $('#open-envio-modal-btn');
+const envioModal        = $('#envio-modal');
 
 // === Auto-completar y bloquear "Extracto" por defecto ===
 (function setupExtractoAutofill(){
@@ -172,14 +172,14 @@ auth.onAuthStateChanged(user => {
     if (themeToggle) {
       const savedTheme = localStorage.getItem('theme') || 'light';
       root.setAttribute('data-theme', savedTheme);
-      themeToggle.textContent = savedTheme === 'dark' ? '🌣' : '☾';
+      themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
       themeToggle.onclick = null;
       themeToggle.addEventListener('click', () => {
         const current = root.getAttribute('data-theme') || 'light';
         const next = current === 'dark' ? 'light' : 'dark';
         root.setAttribute('data-theme', next);
         localStorage.setItem('theme', next);
-        themeToggle.textContent = next === 'dark' ? '🌣' : '☾';
+        themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
       });
     }
   } else {
@@ -586,17 +586,30 @@ printLabelBtn?.addEventListener('click', () => {
   win.close();
 });
 
+// === PDF minimalista (A4, sin título, texto 10 bold centrado, espaciado compacto) ===
 pdfLabelBtn?.addEventListener('click', () => {
   const { jsPDF } = window.jspdf;
-  const humanId = labelIdText.textContent;
+  const humanId = labelIdText.textContent; // ej: 4078-252307-I/2025
   const svgElement = barcodeSvg;
 
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a6' });
-  doc.setFontSize(14);
-  doc.text('Etiqueta de Expediente', 74, 14, { align: 'center' });
-  doc.setFontSize(12);
-  doc.text(humanId, 74, 22, { align: 'center' });
+  // PDF A4 vertical
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
+  // Texto arriba, negrita 10, centrado
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const textWidth = doc.getTextWidth(humanId);
+  const textX = (pageWidth - textWidth) / 2;
+  let y = 20; // posición vertical del texto
+
+  doc.text(humanId, textX, y);
+
+  // Espaciado entre texto y código (~0.5 línea)
+  y += 3;
+
+  // Pasar SVG a imagen
   const svgData = new XMLSerializer().serializeToString(svgElement);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -607,12 +620,13 @@ pdfLabelBtn?.addEventListener('click', () => {
     ctx.drawImage(img, 0, 0);
     const dataUrl = canvas.toDataURL('image/png');
 
-    const barcodeWidth = 50; // mm (tope)
+    // Código de barras centrado, ancho 50mm
+    const barcodeWidth = 50; // mm
     const barcodeHeight = (barcodeWidth * img.height) / img.width;
-    const pageW = 148; // A6 landscape
-    const x = (pageW - barcodeWidth) / 2;
+    const barcodeX = (pageWidth - barcodeWidth) / 2;
 
-    doc.addImage(dataUrl, 'PNG', x, 36, barcodeWidth, barcodeHeight);
+    doc.addImage(dataUrl, 'PNG', barcodeX, y, barcodeWidth, barcodeHeight);
+
     const filename = 'etiqueta-' + humanId.replace('/', '-') + '.pdf';
     doc.save(filename);
   };
@@ -746,8 +760,8 @@ async function initScanner(mode) {
   } catch (err) {
     console.error('getUserMedia error:', err);
     const reason = (err && (err.name || err.message)) ? `${err.name}: ${err.message}` : 'Error desconocido';
-    const feedback = document.getElementById('scanner-feedback');
-    if (feedback) feedback.textContent = 'Error al iniciar la cámara. Revisá permisos del navegador para esta página.\n' + reason;
+    const fb = document.getElementById('scanner-feedback');
+    if (fb) fb.textContent = 'Error al iniciar la cámara. Revisá permisos del navegador para esta página.\n' + reason;
   }
 }
 
@@ -984,4 +998,3 @@ document.addEventListener('keydown', (e) => {
 
 // Inicializar en CARGA
 switchTab('carga');
-
