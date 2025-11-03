@@ -6,14 +6,10 @@ import { openModal, closeAllModals, hookModalCloseButtons } from './modals.js';
 import { auth, db, Timestamp } from './firebase-compat.js';
 import { initLabelsTab } from './labels.js';
 
-// Utilidades DOM
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 
-// Estado simple
-const state = {
-  currentUser: null,
-};
+const state = { currentUser: null };
 
 // ---------- TABS ----------
 function switchTab(tab) {
@@ -22,12 +18,10 @@ function switchTab(tab) {
     etiquetas: { btn: '#tab-etiquetas', sec: '#etiquetas-section' },
     busqueda:  { btn: '#tab-busqueda',  sec: '#busqueda-section' },
   };
-
   Object.values(map).forEach(({btn, sec}) => {
     $(btn).classList.remove('active');
     $(sec).classList.add('hidden');
   });
-
   const target = map[tab] || map.carga;
   $(target.btn).classList.add('active');
   $(target.sec).classList.remove('hidden');
@@ -86,22 +80,11 @@ function bindModals() {
 
 // ---------- INICIALIZACIÓN ----------
 window.addEventListener('DOMContentLoaded', () => {
-  // Firebase compat listo
-  firebaseInit();
-
-  // Theme (icono se dibuja desde CSS con data-theme)
+  // (Ya no se llama firebaseInit: firebase se inicializa en firebase-compat.js)
   initThemeToggle();
-
-  // Tabs + default
   initTabs();
   switchTab('carga');
-
-  // Modales
   bindModals();
-
-  // Auth
   bindAuthUI();
-
-  // Tab de ETIQUETAS
   initLabelsTab();
 });
