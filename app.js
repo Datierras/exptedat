@@ -1,6 +1,17 @@
-// app.js (FINAL con ENVÍO GRUPAL en modal)
+// app.js (FINAL con ENVÍO GRUPAL en modal + Firebase config)
 
-// --- Inicialización de Firebase y Constantes Globales ---
+// --- Firebase config (TU PROYECTO) ---
+const firebaseConfig = {
+  apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
+  authDomain: "exptcoord.firebaseapp.com",
+  projectId: "exptcoord",
+  storageBucket: "exptcoord.firebasestorage.app",
+  messagingSenderId: "416639039117",
+  appId: "1:416639039117:web:d9422f6d853a760a3014c4",
+  measurementId: "G-94PRRLFZV4"
+};
+
+// --- Inicialización de Firebase (API v8 global) ---
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -155,7 +166,6 @@ auth.onAuthStateChanged(user => {
     logoutBtn.classList.remove('hidden');
     loadUserProfile();
 
-    // Toggle Modo
     const root = document.documentElement;
     const themeToggle = document.getElementById('theme-toggle');
 
@@ -222,7 +232,6 @@ async function loadUserProfile() {
     state.userProfile = docSnap.data();
     userApodoInput.value = state.userProfile.apodo || '';
 
-    // Aplicar última oficina si existe
     const sel = document.querySelector('#carga-oficina');
     if (sel && state.userProfile.ultimaOficina) {
       sel.value = state.userProfile.ultimaOficina;
@@ -415,7 +424,6 @@ expedienteForm?.addEventListener('submit', async (e) => {
     return;
   }
 
-  // Guardar última oficina
   try {
     await db.collection('usuarios').doc(state.currentUser.uid)
       .set({ ultimaOficina: expedienteData.oficina }, { merge: true });
@@ -436,7 +444,6 @@ expedienteForm?.addEventListener('submit', async (e) => {
 });
 
 // === Distribución automática de lecturas del lector USB (HID) ===
-// Acepta separadores -, ' o "
 const EXP_SCAN_RE = /^(\d+)[-']?(\d+)[-']?([A-Za-z])[-/'"]?(\d{4})$/;
 
 // Rellena los 4 campos de una sección (prefix = 'carga'|'search'|'envio')
@@ -451,7 +458,6 @@ function fillSection(prefix, c, n, l, a) {
   if (fAn)  fAn.value  = a;
 }
 
-// Intenta repartir un string en la sección indicada
 function distributeTo(prefix, raw, srcEl) {
   const v = (raw || '').trim();
   const m = v.match(EXP_SCAN_RE);
@@ -460,11 +466,9 @@ function distributeTo(prefix, raw, srcEl) {
 
   fillSection(prefix, c, n, l, a);
 
-  // En Envío: auto-agregar a la lista y limpiar campos
   if (prefix === 'envio') {
     addExpToEnvioLista({ codigo: c, numero: n, letra: l, anio: a });
 
-    // limpiar los 4 campos para permitir el siguiente escaneo
     const ec = document.querySelector('#envio-codigo');
     const en = document.querySelector('#envio-numero');
     const el = document.querySelector('#envio-letra');
@@ -478,21 +482,18 @@ function distributeTo(prefix, raw, srcEl) {
     }, 30);
   }
 
-  // NO limpiar si la lectura cayó en el propio campo "codigo"
   const codeId = `${prefix}-codigo`;
   if (srcEl && srcEl.id !== codeId) {
     srcEl.value = '';
   } else if (srcEl && srcEl.id === codeId) {
-    srcEl.value = c; // asegura que quede 4078
+    srcEl.value = c;
   }
 
-  // Foco siguiente
   const next = (prefix === 'carga') ? '#carga-extracto'
             : (prefix === 'search') ? '#search-extracto'
-            : '#envio-codigo'; // para 'envio'
+            : '#envio-codigo';
   document.querySelector(next)?.focus();
 
-  // En Búsqueda: disparar búsqueda automática (cómodo)
   if (prefix === 'search') {
     try { searchForm?.requestSubmit?.(); } catch(_) {}
   }
@@ -500,7 +501,6 @@ function distributeTo(prefix, raw, srcEl) {
   return true;
 }
 
-// Handlers robustos de escaneo/pegado por sección
 function attachScanHandlersFor(prefix) {
   const selectors = [
     `#${prefix}-codigo`,
@@ -535,12 +535,11 @@ function attachScanHandlersFor(prefix) {
   });
 }
 
-// Activar para CARGA, BÚSQUEDA y ENVÍO
 attachScanHandlersFor('carga');
 attachScanHandlersFor('search');
 attachScanHandlersFor('envio');
 
-// --- Etiquetas y PDF (Code128, 50 mm ancho) ---
+// --- Etiquetas y PDF (Code128, ancho máx. 50mm) ---
 generateLabelBtn?.addEventListener('click', () => {
   const codigo = $('#carga-codigo').value.trim();
   const numero = $('#carga-numero').value.trim();
@@ -589,7 +588,7 @@ printLabelBtn?.addEventListener('click', () => {
 
 pdfLabelBtn?.addEventListener('click', () => {
   const { jsPDF } = window.jspdf;
-  const humanId = labelIdText.textContent;     // ej: 4078-252307-I/2025
+  const humanId = labelIdText.textContent;
   const svgElement = barcodeSvg;
 
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a6' });
@@ -608,7 +607,7 @@ pdfLabelBtn?.addEventListener('click', () => {
     ctx.drawImage(img, 0, 0);
     const dataUrl = canvas.toDataURL('image/png');
 
-    const barcodeWidth = 50; // mm
+    const barcodeWidth = 50; // mm (tope)
     const barcodeHeight = (barcodeWidth * img.height) / img.width;
     const pageW = 148; // A6 landscape
     const x = (pageW - barcodeWidth) / 2;
@@ -908,7 +907,6 @@ function addExpToEnvioLista({ codigo, numero, letra, anio }) {
   renderEnvioTabla();
 }
 
-// Botón Agregar manual
 envio.btnAgregar?.addEventListener('click', () => {
   addExpToEnvioLista({
     codigo: (envio.codigo?.value || '').trim(),
@@ -923,7 +921,6 @@ envio.btnAgregar?.addEventListener('click', () => {
   envio.codigo?.focus();
 });
 
-// Confirmar envío en lote
 envio.btnConfirmar?.addEventListener('click', async () => {
   const oficina = envio.oficina?.value || '';
   if (!oficina) return alert('Seleccioná una oficina de destino.');
