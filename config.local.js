@@ -1,4 +1,0 @@
-// config.local.js  (NO subir a GitHub)
-window.ENV = {
-  VITE_FIREBASE_API_KEY: "AIzaSyC_0rQspoBE3c6bU_to7g4pFX2uhVHLtH4"
-};
