@@ -66,14 +66,14 @@ function initApp() {
       if (themeToggle) {
         const saved = localStorage.getItem('theme') || 'light';
         root.setAttribute('data-theme', saved);
-        themeToggle.textContent = saved === 'dark' ? '☀️' : '🌙';
+        themeToggle.textContent = saved === 'dark' ? '☀︎' : '☽';
         themeToggle.onclick = null;
         themeToggle.addEventListener('click', () => {
           const cur = root.getAttribute('data-theme') || 'light';
           const next = cur === 'dark' ? 'light' : 'dark';
           root.setAttribute('data-theme', next);
           localStorage.setItem('theme', next);
-          themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+          themeToggle.textContent = next === 'dark' ? '☀︎' : '☽';
         });
       }
 
