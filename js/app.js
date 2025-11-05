@@ -1,4 +1,5 @@
 // app.js — FINAL
+console.log("Firebase API key cargada:", window.ENV?.VITE_FIREBASE_API_KEY);
 
 // ====== FIREBASE (v8 compat) ======
 const firebaseConfig = {
