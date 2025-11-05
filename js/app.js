@@ -1,15 +1,14 @@
 // app.js — FINAL
-console.log("Firebase API key cargada:", window.ENV?.VITE_FIREBASE_API_KEY);
 
 // ====== FIREBASE (v8 compat) ======
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  apiKey: "AIzaSyC_0rQspoBE3c6bU_to7g4pFX2uhVHLtH4",
   authDomain: "exptcoord.firebaseapp.com",
   projectId: "exptcoord",
   storageBucket: "exptcoord.firebasestorage.app",
   messagingSenderId: "416639039117",
   appId: "1:416639039117:web:d9422f6d853a760a3014c4",
-  measurementId: "G-94PRRLFZV4"
+  measurementId: "G-94RPRLFZV4" // opcional
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
