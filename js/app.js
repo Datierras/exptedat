@@ -2,7 +2,7 @@
 
 // ====== FIREBASE (v8 compat) ======
 const firebaseConfig = {
-  apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "exptcoord.firebaseapp.com",
   projectId: "exptcoord",
   storageBucket: "exptcoord.firebasestorage.app",
