@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestión de Expedientes</title>
 
-  <!-- Tema antes de cargar CSS -->
+  <!-- Tema antes de CSS -->
   <script>
     document.documentElement.setAttribute(
       'data-theme',
@@ -16,10 +16,9 @@
   <link rel="stylesheet" href="style.css?v=sr6" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Libs -->
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -39,7 +38,7 @@
     </div>
   </div>
 
-  <!-- ===== APP PRINCIPAL ===== -->
+  <!-- ===== APP ===== -->
   <main id="app-container" class="hidden">
     <header class="topbar">
       <h1>Gestión de Expedientes</h1>
@@ -53,7 +52,7 @@
       <button id="tab-busqueda" class="tab-btn">BÚSQUEDA</button>
     </nav>
 
-    <!-- ===== SECCIÓN CARGA ===== -->
+    <!-- ===== CARGA ===== -->
     <section id="carga-section" class="content-section">
       <form id="expediente-form" class="main-form">
         <div class="form-grid">
@@ -119,7 +118,7 @@
       </form>
     </section>
 
-    <!-- ===== SECCIÓN ETIQUETAS ===== -->
+    <!-- ===== ETIQUETAS ===== -->
     <section id="etiquetas-section" class="content-section hidden">
       <h3>📄 Generación múltiple de etiquetas</h3>
       <p>Agregá los expedientes que querés imprimir en una sola hoja A4.</p>
@@ -127,8 +126,8 @@
       <div class="form-grid">
         <input id="etq-codigo" type="text" placeholder="Código" />
         <input id="etq-numero" type="text" placeholder="Número" />
-        <input id="etq-letra" type="text" placeholder="Letra" />
-        <input id="etq-anio" type="text" placeholder="Año" />
+        <input id="etq-letra"  type="text" placeholder="Letra" />
+        <input id="etq-anio"   type="text" placeholder="Año" />
       </div>
 
       <div class="action-buttons">
@@ -138,9 +137,7 @@
 
       <table id="etq-tabla" style="width:100%; margin-top:15px;">
         <thead>
-          <tr>
-            <th>Código</th><th>Número</th><th>Letra</th><th>Año</th><th>Quitar</th>
-          </tr>
+          <tr><th>Código</th><th>Número</th><th>Letra</th><th>Año</th><th>Quitar</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -150,26 +147,14 @@
       </div>
     </section>
 
-    <!-- ===== SECCIÓN BÚSQUEDA ===== -->
+    <!-- ===== BÚSQUEDA ===== -->
     <section id="busqueda-section" class="content-section hidden">
       <form id="search-form" class="main-form">
         <div class="form-grid">
           <input type="text" id="search-codigo" placeholder="Código (ej: 4078)" />
           <input type="number" id="search-numero" placeholder="Número (obligatorio)" />
-          <input
-            type="text"
-            id="search-letra"
-            placeholder="Letra (ej: I)"
-            maxlength="1"
-            oninput="this.value=this.value.toUpperCase()"
-          />
-          <input
-            type="number"
-            id="search-anio"
-            placeholder="Año (ej: 2025)"
-            maxlength="4"
-            oninput="this.value=this.value.slice(0,4)"
-          />
+          <input type="text" id="search-letra" placeholder="Letra (ej: I)" maxlength="1" oninput="this.value=this.value.toUpperCase()" />
+          <input type="number" id="search-anio" placeholder="Año (ej: 2025)" maxlength="4" oninput="this.value=this.value.slice(0,4)" />
         </div>
 
         <textarea id="search-extracto" placeholder="Extracto (opcional)"></textarea>
@@ -239,26 +224,67 @@
       <div class="modal-actions">
         <button id="print-label-btn">Imprimir</button>
         <button id="pdf-label-btn">PDF</button>
-        <button class="close-modal-btn" id="close-modal-btn">Cerrar</button>
+        <button class="close-modal-btn">Cerrar</button>
+      </div>
+    </div>
+
+    <!-- Envío grupal -->
+    <div id="envio-modal" class="modal-content glass-panel hidden">
+      <h2>Envío grupal de expedientes</h2>
+      <div class="form-grid">
+        <input id="envio-codigo" type="text" placeholder="Código" />
+        <input id="envio-numero" type="text" placeholder="Número" />
+        <input id="envio-letra"  type="text" placeholder="Letra" />
+        <input id="envio-anio"   type="text" placeholder="Año" />
+      </div>
+
+      <div class="modal-actions">
+        <button id="agregar-expediente" type="button">Agregar</button>
+        <button class="close-modal-btn" type="button">Cerrar</button>
+      </div>
+
+      <table id="tabla-envios" style="width:100%; margin-top:12px;">
+        <thead>
+          <tr><th>Código</th><th>Número</th><th>Letra</th><th>Año</th><th>Quitar</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div style="margin-top:12px">
+        <label style="display:block; margin-bottom:6px">Enviar a oficina:</label>
+        <select id="envio-oficina-select" style="width:100%">
+          <option value="" disabled selected>Seleccionar…</option>
+          <option>Administración General</option>
+          <option>D.G. de Ingreso de Tierras</option>
+          <option>D.G. de Escrituración Familiar</option>
+          <option>D.G. de Regularización Dominial</option>
+          <option>D.G. de Programa de Tierras</option>
+          <option>C.G.P. Legal, Administrativo e Institucional</option>
+          <option>C.G.P. de Hábitat, Vivienda e Integración Urbana</option>
+          <option>C.G.P. Abordate Territorial</option>
+          <option>C.G.P. de Obras Particulares y Catastro</option>
+          <option>C.G.P. de Gerencia de Proyectos</option>
+          <option>Contaduría</option>
+          <option>Jefatura de Compras y Contrataciones</option>
+          <option>Tesorería</option>
+          <option>Mesa de Entradas</option>
+        </select>
+      </div>
+
+      <div class="modal-actions" style="margin-top:12px">
+        <button id="confirmar-envio-btn" type="button" class="btn btn-primary">Confirmar envío</button>
       </div>
     </div>
   </div>
 
   <button id="logout-btn" class="logout-btn hidden">Salir</button>
 
-  <!-- ===== FIREBASE SDKs (compat) ===== -->
+  <!-- ===== Firebase SDKs (compat) ===== -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-  <!-- ===== MÓDULOS JS ===== -->
-  <script type="module" src="./js/event-bus.js"></script>
-  <script type="module" src="./js/dom.js"></script>
-  <script type="module" src="./js/barcode.js"></script>
-  <script type="module" src="./js/theme.js"></script>
-  <script type="module" src="./js/modals.js"></script>
-  <script type="module" src="./js/firebase-compat.js"></script>
-  <script type="module" src="./js/store.js"></script>
-  <script type="module" src="./js/app.js"></script>
+  <!-- ===== App ===== -->
+  <script src="./app.js?v=final"></script>
 </body>
 </html>
