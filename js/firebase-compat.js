@@ -10,7 +10,7 @@ if (typeof window.firebase === 'undefined') {
 
 // Tu config
 const firebaseConfig = {
-  apiKey: "AIzaSyAHXCfXoJK1p_naZf5v0_cAa6cphX1e1E8",
+  apiKey: "AIzaSyC_0rQspoBE3c6bU_to7g4pFX2uhVHLtH4",
   authDomain: "exptcoord.firebaseapp.com",
   projectId: "exptcoord",
   storageBucket: "exptcoord.firebasestorage.app",
