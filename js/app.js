@@ -327,7 +327,6 @@ function distributeTo(prefix, raw, srcEl) {
   const m = (raw || '').trim().match(EXP_SCAN_RE);
   if (!m) return false;
   const [, c, n, l, a] = m;
-
   fillSection(prefix, c, n, l, a);
 
   if (prefix==='envio') {
@@ -382,7 +381,6 @@ async function performSearch(isAdvanced=false, container) {
     const letra  = ($('#search-letra')?.value || '').trim().toUpperCase();
     const anio   = $('#search-anio')?.value.trim();
     const extracto = $('#search-extracto')?.value.trim();
-
     if (!numero) { if (container) container.innerHTML='<p class="error-message">Para la búsqueda normal, el campo <strong>Número</strong> es obligatorio.</p>'; return; }
 
     let q1 = base; if (codigo) q1 = q1.where('codigo','==',codigo);
@@ -420,8 +418,8 @@ function renderSearchResults(querySnapshot, container){
     let clase = mov==='recibimos'?'recibimos': mov==='enviamos'?'enviamos':'';
     const div=document.createElement('div');
     div.className=`result-item${i===0?' latest':''} ${clase}`;
-    div.innerHTML=`
-      ${i===0?'<span class="latest-badge">Último movimiento</span>':''}
+    div.innerHTML=
+      `${i===0?'<span class="latest-badge">Último movimiento</span>':''}
       <strong>ID: ${id}</strong>
       <p class="meta"><strong>Fecha:</strong> ${fecha}</p>
       <p><strong>Extracto:</strong> ${d.extracto||''}</p>
@@ -497,11 +495,9 @@ function setupLabels(){
     const letra=($('#carga-letra')?.value || '').trim().toUpperCase();
     const anio=$('#carga-anio')?.value?.trim();
     if(!codigo || !numero || !letra || !anio){ alert('Completa Código, Número, Letra y Año.'); return; }
-
-    const humanId=`${codigo}-${numero}-${letra}/${anio}`;
-    const barcodeId=`${codigo}-${numero}-${letra}-${anio}`;
+    const humanId   = `${codigo}-${numero}-${letra}/${anio}`;
+    const barcodeId = `${codigo}-${numero}-${letra}-${anio}`;
     if(labelIdText) labelIdText.textContent = humanId;
-
     if(barcodeSvg){
       barcodeSvg.style.width='50mm'; barcodeSvg.style.height='auto';
       barcodeSvg.setAttribute('preserveAspectRatio','xMidYMid meet');
@@ -509,22 +505,20 @@ function setupLabels(){
     }
     openModal($('#label-modal'));
   });
-
   printLabelBtn?.addEventListener('click', () => {
     const html=$('#label-content')?.innerHTML || '';
     const w=window.open('','','height=400,width=600');
     w.document.write('<html><head><title>Imprimir Etiqueta</title>');
     w.document.write('<style>body{text-align:center;font-family:sans-serif;} #barcode{width:50mm;height:auto;} svg{width:50mm !important;height:auto !important;}</style>');
-    w.document.write('</head><body>'+html+'</body></html>'); w.document.close(); w.focus(); w.print(); w.close();
+    w.document.write('</head><body>'+html+'</body></html>');
+    w.document.close(); w.focus(); w.print(); w.close();
   });
-
   pdfLabelBtn?.addEventListener('click', () => {
     const { jsPDF } = window.jspdf;
     const svgElement = $('#barcode'); const humanId = $('#label-id-text')?.textContent || '';
     const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a6' });
     doc.setFontSize(14); doc.text('Etiqueta de Expediente', 74, 14, { align:'center' });
     doc.setFontSize(12); doc.text(humanId, 74, 22, { align:'center' });
-
     const svgData = new XMLSerializer().serializeToString(svgElement);
     const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d'); const img=new Image();
     img.onload = () => {
@@ -546,11 +540,7 @@ function setupEtiquetasMultiples(){
     tbody: $('#etq-tabla tbody')
   };
   const lista = [];
-
-  function render(){
-    if(!input.tbody) return;
-    input.tbody.innerHTML='';
-    lista.forEach((x,i)=>{
+  function render(){ if(!input.tbody) return; input.tbody.innerHTML=''; lista.forEach((x,i)=>{
       const tr=document.createElement('tr');
       tr.innerHTML=`<td>${x.codigo}</td><td>${x.numero}</td><td>${x.letra}</td><td>${x.anio}</td>
         <td><button class="btn btn-sm btn-danger" data-i="${i}">❌</button></td>`;
@@ -558,8 +548,7 @@ function setupEtiquetasMultiples(){
     });
     input.tbody.querySelectorAll('button[data-i]').forEach(b=>{
       b.addEventListener('click', e=>{ const i=+e.currentTarget.dataset.i; lista.splice(i,1); render(); });
-    });
-  }
+    }); }
 
   input.addBtn?.addEventListener('click', ()=>{
     const obj = {
@@ -573,44 +562,28 @@ function setupEtiquetasMultiples(){
     if (lista.some(z => `${z.codigo}-${z.numero}-${z.letra}-${z.anio}`.toUpperCase()===key)) return;
     lista.push(obj); ['codigo','numero','letra','anio'].forEach(k=> input[k].value=''); input.codigo?.focus(); render();
   });
-
   input.clearBtn?.addEventListener('click', ()=>{ lista.length=0; render(); });
-
   input.genBtn?.addEventListener('click', async ()=>{
     if(!lista.length) return alert('No hay expedientes en la lista.');
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit:'mm', format:'a4' });
-
-    // layout simple: 3 columnas x n filas
+    const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit:'mm', format:'a4' });
     const colW = 60; const startX = 15; const startY = 20; const gapX = 10; const gapY = 18;
     let x = startX, y = startY, col = 0;
-
     for (let i=0;i<lista.length;i++){
-      const e = lista[i];
-      const humanId = `${e.codigo}-${e.numero}-${e.letra}/${e.anio}`;
-      const codeId  = `${e.codigo}-${e.numero}-${e.letra}-${e.anio}`;
-
-      // Crear SVG temporal con JsBarcode
-      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      const e = lista[i]; const humanId = `${e.codigo}-${e.numero}-${e.letra}/${e.anio}`; const codeId  = `${e.codigo}-${e.numero}-${e.letra}-${e.anio}`;
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
       JsBarcode(svg, codeId, { format:'CODE128', width:1, height:18, displayValue:false, margin:0 });
       const svgData = new XMLSerializer().serializeToString(svg);
-      const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+      const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
       const img = await new Promise(res => { const im=new Image(); im.onload=()=>res(im); im.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svgData))); });
-
       canvas.width=img.width; canvas.height=img.height; ctx.drawImage(img,0,0);
       const dataUrl = canvas.toDataURL('image/png');
-
       doc.setFontSize(10);
       doc.text(humanId, x + colW/2, y-4, { align:'center' });
-      // 50mm de ancho máx
-      const bw = 50; const bh = (bw*img.height)/img.width;
-      const bx = x + (colW - bw)/2;
+      const bw=50; const bh=(bw*img.height)/img.width; const bx=x + (colW - bw)/2;
       doc.addImage(dataUrl, 'PNG', bx, y, bw, bh);
-
       col++; x += colW + gapX;
       if (col === 3) { col=0; x=startX; y += 25 + gapY; if (y > 280 && i < lista.length-1) { doc.addPage(); x=startX; y=startY; } }
     }
-
     doc.save('etiquetas.pdf');
   });
 }
@@ -625,49 +598,36 @@ function setupEnvioGrupal(){
     btnAgregar: $('#agregar-expediente'),
     btnConfirmar: $('#confirmar-envio-btn'),
   };
-
-  function renderTabla(){
-    if(!envio.tablaBody) return;
-    envio.tablaBody.innerHTML='';
-    envio.lista.forEach((exp,idx)=>{
+  function renderTabla(){ if(!envio.tablaBody) return; envio.tablaBody.innerHTML=''; envio.lista.forEach((exp,idx)=>{
       const tr=document.createElement('tr');
       tr.innerHTML=`<td>${exp.codigo}</td><td>${exp.numero}</td><td>${exp.letra}</td><td>${exp.anio}</td>
       <td><button class="btn btn-sm btn-danger btn-eliminar" data-idx="${idx}">❌</button></td>`;
       envio.tablaBody.appendChild(tr);
     });
-    envio.tablaBody.querySelectorAll('.btn-eliminar').forEach(b=>{
-      b.addEventListener('click',e=>{ const i=+e.currentTarget.dataset.idx; if(!isNaN(i)){ envio.lista.splice(i,1); renderTabla(); } });
-    });
-  }
-
+    envio.tablaBody.querySelectorAll('.btn-eliminar').forEach(btn=>{
+      btn.addEventListener('click', (e) => {
+        const i = parseInt(e.currentTarget.dataset.idx, 10);
+        if (!isNaN(i)) { envio.lista.splice(i,1); renderTabla(); }
+      });
+    }); }
   window.addExpToEnvioLista = function({codigo,numero,letra,anio}){
     if(!codigo||!numero||!letra||!anio) return;
     const key=`${codigo}-${numero}-${(letra||'').toUpperCase()}-${anio}`.toUpperCase();
-    if(envio.lista.some(x => `${x.codigo}-${x.numero}-${x.letra}-${x.anio}`.toUpperCase()===key)) return;
-    envio.lista.push({ codigo, numero, letra:(letra||'').toUpperCase(), anio }); renderTabla();
-  };
-
+    const exists = envio.lista.some(x => `${x.codigo}-${x.numero}-${x.letra}-${x.anio}`.toUpperCase() === key);
+    if (exists) return; envio.lista.push({ codigo, numero, letra:(letra||'').toUpperCase(), anio }); renderTabla(); };
   envio.btnAgregar?.addEventListener('click', ()=>{
-    window.addExpToEnvioLista({
-      codigo: envio.codigo?.value.trim(),
-      numero: envio.numero?.value.trim(),
-      letra:  envio.letra?.value.trim(),
-      anio:   envio.anio?.value.trim(),
-    });
-    ['codigo','numero','letra','anio'].forEach(k=>{ const el=envio[k]; if(el) el.value=''; });
-    envio.codigo?.focus();
+    window.addExpToEnvioLista({ codigo: envio.codigo?.value.trim(), numero: envio.numero?.value.trim(), letra:  envio.letra?.value.trim(), anio:   envio.anio?.value.trim() });
+    ['codigo','numero','letra','anio'].forEach(k => { const el=envio[k]; if(el) el.value=''; }); envio.codigo?.focus();
   });
-
   envio.btnConfirmar?.addEventListener('click', async ()=>{
     const oficina = envio.oficina?.value || '';
-    if(!oficina) return alert('Seleccioná una oficina de destino.');
-    if(!envio.lista.length) return alert('No hay expedientes cargados.');
-    if(!confirm(`¿Confirmar envío de ${envio.lista.length} expedientes a "${oficina}"?`)) return;
-
-    try{
+    if (!oficina) return alert('Seleccioná una oficina de destino.');
+    if (!envio.lista.length) return alert('No hay expedientes cargados.');
+    if (!confirm(`¿Confirmar envío de ${envio.lista.length} expedientes a "${oficina}"?`)) return;
+    try {
       const batch = db.batch();
       const autor = state.userProfile?.apodo || state.currentUser?.email || 'sistema';
-      envio.lista.forEach(exp=>{
+      envio.lista.forEach(exp => {
         const ref = db.collection('expedientes').doc();
         batch.set(ref, {
           codigo: exp.codigo, numero: exp.numero, letra: exp.letra, anio: exp.anio,
@@ -676,7 +636,7 @@ function setupEnvioGrupal(){
       });
       await batch.commit();
       alert(`Se enviaron ${envio.lista.length} expedientes a ${oficina}.`);
-      envio.lista=[]; renderTabla(); envio.codigo?.focus();
-    }catch(err){ console.error(err); alert('Error al registrar los envíos.'); }
+      envio.lista = []; renderTabla(); envio.codigo?.focus();
+    } catch (err) { console.error(err); alert('Error al registrar los envíos.'); }
   });
 }
