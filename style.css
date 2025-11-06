@@ -196,7 +196,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 16px;
-  margin: 1px 0;
+  margin: 16px 0;
 }
 
 input[type="text"],
@@ -292,6 +292,7 @@ button[type="submit"]:disabled {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  margin: 16px 0;
 }
 .action-buttons button {
   flex-grow: 1;
